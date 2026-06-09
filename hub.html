@@ -87,6 +87,29 @@
         </div>
       </div>
     </div>
+
+    <!-- ADMIN ONLY: enter results -->
+    <div id="adminCard" class="card" style="display:none; margin-top:18px; border:2px solid #c75d4a;">
+      <h2 style="color:#c75d4a">Admin — enter results</h2>
+      <p style="font-size:12.5px; color:#6f6a5d; margin:0 0 14px">
+        Tick the teams that <b>advanced</b> at each stage. Each round is built from the one above it, so work top to bottom.
+        Enter the Final's total goals last, then <b>Publish</b> to recompute everyone's points.
+      </p>
+      <div id="adminRounds"></div>
+      <div style="margin-top:14px; display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:#6f6a5d;text-transform:uppercase">Champion</label>
+          <select id="admChamp" style="padding:9px;border:1px solid #d9d5c8;border-radius:7px;min-width:180px"></select>
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:#6f6a5d;text-transform:uppercase">Final — total goals</label>
+          <input id="admGoals" type="number" min="0" style="padding:9px;border:1px solid #d9d5c8;border-radius:7px;width:120px" placeholder="e.g. 3">
+        </div>
+        <button id="admPublish" style="background:#c75d4a;color:#fff;border:none;border-radius:8px;padding:12px 20px;font-weight:700;cursor:pointer">Publish standings</button>
+        <span id="admStatus" style="font-size:12.5px;font-weight:700;color:#6f6a5d"></span>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -103,7 +126,7 @@
 <script type="module">
   import { auth, db } from "./firebase-init.js";
   import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { collection, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { collection, onSnapshot, doc, getDoc, getDocs, setDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const $ = id => document.getElementById(id);
   const DEADLINE_MS = 1781204400000; // June 11, 2026, 3:00 PM EDT
@@ -131,6 +154,7 @@
       $("pickHint").textContent = "Names become clickable to reveal picks after the deadline.";
     }
     startStandings();
+    initAdmin(user);
   });
 
   function startStandings(){
@@ -192,6 +216,103 @@
   }
 
   function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  /* ===================== ADMIN ===================== */
+  const ADMIN_EMAIL = "warren@wcpool.local";
+  const GROUPS = {
+    A:["Mexico","South Korea","South Africa","Czechia"], B:["Canada","Switzerland","Qatar","Bosnia-Herzegovina"],
+    C:["Brazil","Morocco","Scotland","Haiti"], D:["USA","Paraguay","Australia","Turkiye"],
+    E:["Germany","Ecuador","Ivory Coast","Curacao"], F:["Netherlands","Japan","Tunisia","Sweden"],
+    G:["Belgium","Iran","Egypt","New Zealand"], H:["Spain","Uruguay","Saudi Arabia","Cape Verde"],
+    I:["France","Senegal","Norway","Iraq"], J:["Argentina","Austria","Algeria","Jordan"],
+    K:["Portugal","Colombia","Uzbekistan","DR Congo"], L:["England","Croatia","Panama","Ghana"]
+  };
+  const ALL_TEAMS = Object.values(GROUPS).flat();
+  const ROUNDS = [
+    {key:"r32", label:"Round of 32 — advanced (tick 32)", from:null},
+    {key:"r16", label:"Round of 16 — advanced (tick 16)", from:"r32"},
+    {key:"qf",  label:"Quarter-finals — advanced (tick 8)", from:"r16"},
+    {key:"sf",  label:"Semi-finals — advanced (tick 4)",   from:"qf"},
+    {key:"fin", label:"Final — the 2 finalists",            from:"sf"}
+  ];
+  const sel = {};
+
+  function poolFor(round){ return round.from ? [...sel[round.from]] : ALL_TEAMS; }
+  function renderRound(round){
+    const pool = poolFor(round).slice().sort();
+    const box = document.getElementById("rnd_"+round.key);
+    const chosen = sel[round.key] || new Set();
+    box.innerHTML = pool.map(t=>{
+      const on = chosen.has(t) ? "checked" : "";
+      return '<label style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px;margin:3px 10px 3px 0;white-space:nowrap"><input type="checkbox" data-r="'+round.key+'" value="'+escapeHtml(t)+'" '+on+'> '+escapeHtml(t)+'</label>';
+    }).join("") || '<span class="empty">Tick teams in the round above first.</span>';
+  }
+  function rebuildFrom(idx){
+    for(let i=idx+1;i<ROUNDS.length;i++){
+      const r=ROUNDS[i], parent=sel[r.from];
+      sel[r.key] = new Set([...(sel[r.key]||[])].filter(t=>parent.has(t)));
+      renderRound(r);
+    }
+    renderChampOptions();
+  }
+  function renderChampOptions(){
+    const finalists=[...(sel.fin||[])].sort();
+    const cur=$("admChamp").value;
+    $("admChamp").innerHTML = '<option value="">—</option>'+finalists.map(t=>'<option '+(t===cur?"selected":"")+'>'+escapeHtml(t)+'</option>').join("");
+  }
+  function buildAdminUI(existing){
+    sel.r32=new Set(existing.r32||[]); sel.r16=new Set(existing.r16||[]); sel.qf=new Set(existing.qf||[]); sel.sf=new Set(existing.sf||[]); sel.fin=new Set(existing.fin||[]);
+    const host=$("adminRounds");
+    host.innerHTML = ROUNDS.map(r=>'<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:800;letter-spacing:.3px;color:#2b2b29;text-transform:uppercase;margin-bottom:4px">'+r.label+' <span id="cnt_'+r.key+'" style="color:#c75d4a"></span></div><div id="rnd_'+r.key+'" style="border:1px solid #e2ddd0;border-radius:8px;padding:8px;background:#faf8f1"></div></div>').join("");
+    ROUNDS.forEach(renderRound);
+    updateCounts();
+    renderChampOptions();
+    $("admGoals").value = existing.finalGoals!=null ? existing.finalGoals : "";
+    setTimeout(()=>{ $("admChamp").value = existing.champ||""; },0);
+    host.addEventListener("change", (e)=>{
+      const cb=e.target; if(cb.tagName!=="INPUT") return;
+      const rk=cb.dataset.r; if(!sel[rk]) sel[rk]=new Set();
+      if(cb.checked) sel[rk].add(cb.value); else sel[rk].delete(cb.value);
+      rebuildFrom(ROUNDS.findIndex(r=>r.key===rk));
+      updateCounts();
+    });
+  }
+  function updateCounts(){
+    const need={r32:32,r16:16,qf:8,sf:4,fin:2};
+    ROUNDS.forEach(r=>{ const el=document.getElementById("cnt_"+r.key); if(el){ el.textContent=(sel[r.key]||new Set()).size+" / "+need[r.key]; } });
+  }
+  function deriveSets(p){
+    const g=p.groups||{},wild=p.wild||{},adv=p.adv||{};
+    const r32=new Set(); Object.values(g).forEach(x=>{if(x.g1)r32.add(x.g1);if(x.g2)r32.add(x.g2);}); Object.values(wild).forEach(x=>{if(x&&x.adv&&x.team)r32.add(x.team);});
+    const pick=f=>new Set(Object.keys(adv).filter(id=>id.includes(f)).map(id=>adv[id]).filter(Boolean));
+    return {r32,r16:pick("16-"),qf:pick("QF-"),sf:pick("SF-"),fin:pick("FIN-"),champ:adv["bx-CHAMP"]||""};
+  }
+  function scoreEntry(picks, actual){
+    const s=deriveSets(picks); const inter=(A,B)=>[...A].filter(x=>B.has(x)).length;
+    const b={r32:inter(s.r32,actual.r32),r16:inter(s.r16,actual.r16)*2,qf:inter(s.qf,actual.qf)*4,sf:inter(s.sf,actual.sf)*8,fin:inter(s.fin,actual.fin)*16,champ:(s.champ&&s.champ===actual.champ)?50:0};
+    b.total=b.r32+b.r16+b.qf+b.sf+b.fin+b.champ; return b;
+  }
+  async function publish(){
+    const st=$("admStatus"); st.textContent="Publishing…"; st.style.color="#6f6a5d";
+    const actual = { r32:[...sel.r32], r16:[...sel.r16], qf:[...sel.qf], sf:[...sel.sf], fin:[...sel.fin], champ:$("admChamp").value||"", finalGoals: $("admGoals").value!=="" ? Number($("admGoals").value) : null };
+    try{
+      await setDoc(doc(db,"meta","results"), {...actual, updatedAt:serverTimestamp()}, {merge:true});
+      const actualSets={ r32:new Set(actual.r32), r16:new Set(actual.r16), qf:new Set(actual.qf), sf:new Set(actual.sf), fin:new Set(actual.fin), champ:actual.champ };
+      const entries = await getDocs(collection(db,"entries"));
+      const batch = writeBatch(db); let n=0;
+      entries.forEach(snap=>{ const e=snap.data(); if(!e||!e.picks) return; const b=scoreEntry(e.picks, actualSets); batch.set(doc(db,"players",snap.id), {points:b.total, breakdown:b, scoredAt:serverTimestamp()}, {merge:true}); n++; });
+      await batch.commit();
+      st.textContent="Published ✓ scored "+n+" players"; st.style.color="#3e7d54";
+    }catch(err){ console.error(err); st.textContent="Error: "+(err.message||err); st.style.color="#b3402e"; }
+  }
+  async function initAdmin(user){
+    if(!user.email || user.email.toLowerCase() !== ADMIN_EMAIL) return;
+    $("adminCard").style.display="block";
+    let existing={};
+    try{ const r=await getDoc(doc(db,"meta","results")); if(r.exists()) existing=r.data(); }catch(e){ console.error(e); }
+    buildAdminUI(existing);
+    $("admPublish").addEventListener("click", publish);
+  }
 </script>
 </body>
 </html>
