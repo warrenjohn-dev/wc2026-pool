@@ -18,6 +18,8 @@
   .btn-pdf { background:#c75d4a; color:#fff; } .btn-pdf:hover{ background:#b34f3d; }
   .btn-print { background:#2b2b29; color:#fff; }
   .btn-clear { background:#efece3; color:#8a4a3e; border:1px solid #d9d5c8; }
+  .btn-save { background:#2b2b29; color:#fff; }
+  .btn-save:hover { background:#444239; }
   .hint { width:100%; font-size:11px; opacity:.7; }
 
   .wrap { overflow-x:auto; padding:18px 12px 50px; }
@@ -211,6 +213,7 @@
   <span class="ttl">&#9917; World Cup 2026 — Office Pool</span>
   <input class="player" id="pname" placeholder="Your name">
   <button class="btn-pdf" onclick="savePDF()">⬇ Save as PDF</button>
+  <button class="btn-save" id="btnSaveNow" type="button">💾 Save picks</button>
   <button class="btn-print" onclick="window.print()">🖨 Print</button>
   <button class="btn-clear" onclick="clearAll()">Clear</button>
   <span class="authstatus">Signed in as <b id="whoami">—</b></span>
@@ -826,6 +829,8 @@ populateBracket();
   ["auUser","auPass","auDisplay"].forEach(id => $(id).addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); $("btnPrimary").click(); } }));
 
   $("btnLogout").addEventListener("click", () => signOut(auth));
+  const saveNowBtn = $("btnSaveNow");
+  if(saveNowBtn) saveNowBtn.addEventListener("click", () => { clearTimeout(saveTimer); saveEntry(); });
 
   function humanize(e){ return (e && e.message ? e.message.replace("Firebase:", "").trim() : "Something went wrong."); }
 
@@ -845,7 +850,7 @@ populateBracket();
     return { groups, wild, adv, tiegoals: tg ? tg.value : "" };
   }
 
-  function advRank(id){ return id.includes('16-s')?1 : id.includes('QF-s')?2 : id.includes('SF-s')?3 : id.includes('FIN-s')?4 : id.includes('CHAMP')?5 : 9; }
+  function advRank(id){ return id.includes('CHAMP')?5 : id.includes('FIN-')?4 : id.includes('SF-')?3 : id.includes('QF-')?2 : id.includes('16-')?1 : 9; }
 
   function restorePicks(data){
     if(!data) return;
