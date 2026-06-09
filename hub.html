@@ -272,14 +272,33 @@
     host.addEventListener("change", (e)=>{
       const cb=e.target; if(cb.tagName!=="INPUT") return;
       const rk=cb.dataset.r; if(!sel[rk]) sel[rk]=new Set();
-      if(cb.checked) sel[rk].add(cb.value); else sel[rk].delete(cb.value);
+      const cap=LIMIT[rk];
+      if(cb.checked){
+        if(sel[rk].size >= cap){ cb.checked=false; flashLimit(rk); return; } // block over-selection
+        sel[rk].add(cb.value);
+      } else {
+        sel[rk].delete(cb.value);
+      }
       rebuildFrom(ROUNDS.findIndex(r=>r.key===rk));
       updateCounts();
     });
   }
+  const LIMIT={r32:32,r16:16,qf:8,sf:4,fin:2};
+  function flashLimit(rk){
+    const el=document.getElementById("cnt_"+rk);
+    if(!el) return;
+    const orig=el.textContent;
+    el.textContent = orig + " — max reached";
+    el.style.color="#b3402e";
+    setTimeout(()=>{ updateCounts(); }, 1200);
+  }
   function updateCounts(){
-    const need={r32:32,r16:16,qf:8,sf:4,fin:2};
-    ROUNDS.forEach(r=>{ const el=document.getElementById("cnt_"+r.key); if(el){ el.textContent=(sel[r.key]||new Set()).size+" / "+need[r.key]; } });
+    ROUNDS.forEach(r=>{
+      const el=document.getElementById("cnt_"+r.key); if(!el) return;
+      const n=(sel[r.key]||new Set()).size, cap=LIMIT[r.key];
+      el.textContent = n+" / "+cap;
+      el.style.color = (n===cap) ? "#3e7d54" : "#c75d4a";
+    });
   }
   function deriveSets(p){
     const g=p.groups||{},wild=p.wild||{},adv=p.adv||{};
