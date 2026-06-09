@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>World Cup 2026 — Pool Hub</title>
+<style>
+  :root{ --ink:#2b2b29; --taupe:#6f6a5d; --cream:#f1eee5; --panel:#fff; --border:#d9d5c8; --clay:#c75d4a; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font-family:'Inter','Segoe UI',system-ui,-apple-system,Roboto,'Helvetica Neue',Arial,sans-serif; background:var(--cream); color:var(--ink); }
+  .topbar{ background:#efece3; border-bottom:1px solid var(--border); padding:12px 18px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .topbar .brand{ font-family:Georgia,'Times New Roman',serif; font-weight:700; font-size:18px; margin-right:auto; }
+  .topbar .who{ font-size:12.5px; color:var(--taupe); }
+  .topbar button{ border:none; border-radius:7px; padding:9px 14px; font-size:13px; font-weight:700; cursor:pointer; }
+  .btn-edit{ background:var(--clay); color:#fff; } .btn-edit:hover{ background:#b34f3d; }
+  .btn-edit[disabled]{ opacity:.5; cursor:not-allowed; }
+  .btn-out{ background:#efece3; color:var(--taupe); border:1px solid var(--border); }
+  .wrap{ max-width:1080px; margin:0 auto; padding:22px 16px 60px; }
+  h1{ font-family:Georgia,'Times New Roman',serif; font-size:26px; margin:6px 0 2px; }
+  .sub{ color:var(--taupe); font-size:13px; margin-bottom:20px; }
+  .grid{ display:grid; grid-template-columns:1.3fr 1fr; gap:18px; align-items:start; }
+  @media(max-width:820px){ .grid{ grid-template-columns:1fr; } }
+  .card{ background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px 18px; box-shadow:0 3px 14px rgba(0,0,0,.05); }
+  .card h2{ font-size:13px; letter-spacing:.4px; text-transform:uppercase; color:var(--taupe); margin:0 0 12px; }
+  table{ width:100%; border-collapse:collapse; }
+  th,td{ text-align:left; padding:9px 8px; border-bottom:1px solid #efece1; font-size:13.5px; }
+  th{ font-size:11px; text-transform:uppercase; letter-spacing:.3px; color:var(--taupe); }
+  td.rank{ width:34px; color:var(--taupe); font-weight:700; }
+  td.pts{ text-align:right; font-weight:800; }
+  tr.me{ background:#fbf2ee; }
+  .namebtn{ background:none; border:none; padding:0; font-size:13.5px; font-weight:700; color:var(--ink); cursor:pointer; text-align:left; }
+  .namebtn:hover{ color:var(--clay); text-decoration:underline; }
+  .badge{ font-size:10px; font-weight:800; padding:2px 7px; border-radius:20px; }
+  .badge.in{ background:#e7f1ea; color:#3e7d54; }
+  .badge.no{ background:#f1eee4; color:#a8a293; }
+  .placeholder{ color:var(--taupe); font-size:13px; line-height:1.6; background:#faf8f1; border:1px dashed var(--border); border-radius:9px; padding:14px; }
+  .empty{ color:var(--taupe); font-size:13px; padding:10px 2px; }
+  /* pick viewer modal */
+  .modal{ position:fixed; inset:0; background:rgba(43,43,41,.45); display:none; align-items:center; justify-content:center; padding:18px; z-index:100; }
+  .modal.show{ display:flex; }
+  .modalcard{ background:#fff; border-radius:14px; max-width:560px; width:100%; max-height:86vh; overflow:auto; padding:22px 24px; }
+  .modalcard h3{ font-family:Georgia,serif; font-size:20px; margin:0 0 2px; }
+  .modalcard .ph{ color:var(--taupe); font-size:12.5px; margin-bottom:16px; }
+  .champrow{ background:linear-gradient(180deg,#6f6a5d,#2b2b29); color:#fff; border-radius:10px; padding:12px 14px; margin-bottom:14px; }
+  .champrow .lbl{ font-size:10px; letter-spacing:1px; text-transform:uppercase; opacity:.85; }
+  .champrow .val{ font-size:18px; font-weight:800; }
+  .pk{ display:flex; justify-content:space-between; font-size:13px; padding:5px 0; border-bottom:1px solid #f1eee4; }
+  .pk .k{ color:var(--taupe); }
+  .seclbl{ font-size:11px; text-transform:uppercase; letter-spacing:.3px; color:var(--taupe); margin:14px 0 4px; font-weight:700; }
+  .closebtn{ margin-top:16px; background:var(--ink); color:#fff; border:none; border-radius:8px; padding:10px 16px; font-weight:700; cursor:pointer; }
+  .loadingline{ color:var(--taupe); font-size:13px; padding:30px 0; text-align:center; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="brand">⚽ World Cup 2026 — Pool Hub</span>
+  <span class="who">Signed in as <b id="who">—</b></span>
+  <button class="btn-edit" id="btnEdit" type="button">Edit my picks</button>
+  <button class="btn-out" id="btnOut" type="button">Log out</button>
+</div>
+
+<div class="wrap">
+  <div id="loading" class="loadingline">Loading the hub…</div>
+
+  <div id="content" style="display:none">
+    <h1>Pool Hub</h1>
+    <div class="sub" id="deadlineNote"></div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Standings</h2>
+        <table>
+          <thead><tr><th>#</th><th>Player</th><th>Status</th><th style="text-align:right">Points</th></tr></thead>
+          <tbody id="standingsBody"><tr><td colspan="4" class="empty">No entries yet.</td></tr></tbody>
+        </table>
+        <div class="empty" id="pickHint" style="margin-top:8px"></div>
+      </div>
+
+      <div>
+        <div class="card" style="margin-bottom:18px">
+          <h2>Today's matches</h2>
+          <div class="placeholder">⚽ Live scores light up at kickoff — first match June 11, 2026. (Auto-updates once results start.)</div>
+        </div>
+        <div class="card">
+          <h2>Schedule</h2>
+          <div class="placeholder">📅 The match schedule will appear here once the results feed is connected.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- pick viewer -->
+<div class="modal" id="pickModal">
+  <div class="modalcard">
+    <h3 id="pmName">Picks</h3>
+    <div class="ph" id="pmSub"></div>
+    <div id="pmBody"></div>
+    <button class="closebtn" id="pmClose" type="button">Close</button>
+  </div>
+</div>
+
+<script type="module">
+  import { auth, db } from "./firebase-init.js";
+  import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { collection, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const $ = id => document.getElementById(id);
+  const DEADLINE_MS = 1781204400000; // June 11, 2026, 3:00 PM EDT
+  const revealed = () => Date.now() > DEADLINE_MS;
+  let me = null;
+
+  const deadlineStr = new Date(DEADLINE_MS).toLocaleString([], {weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
+
+  $("btnOut").addEventListener("click", ()=> signOut(auth).then(()=> location.href="index.html"));
+  $("btnEdit").addEventListener("click", ()=> location.href="index.html?edit=1");
+  $("pmClose").addEventListener("click", ()=> $("pickModal").classList.remove("show"));
+  $("pickModal").addEventListener("click", e=>{ if(e.target.id==="pickModal") $("pickModal").classList.remove("show"); });
+
+  onAuthStateChanged(auth, (user)=>{
+    if(!user){ location.href="index.html"; return; }
+    me = user;
+    $("who").textContent = user.displayName || (user.email? user.email.split("@")[0] : "Player");
+    $("loading").style.display="none";
+    $("content").style.display="block";
+    if(revealed()){
+      $("deadlineNote").textContent = "Picks are now public — click any name to view their bracket. Standings update automatically as games are played.";
+      $("pickHint").textContent = "Tip: click a player's name to see their full bracket.";
+    } else {
+      $("deadlineNote").textContent = "Picks lock and become public on " + deadlineStr + ". Until then, everyone's selections stay private.";
+      $("pickHint").textContent = "Names become clickable to reveal picks after the deadline.";
+    }
+    startStandings();
+  });
+
+  function startStandings(){
+    onSnapshot(collection(db, "players"), (snap)=>{
+      const rows = [];
+      snap.forEach(d=> rows.push(d.data()));
+      rows.sort((a,b)=> (b.points||0)-(a.points||0) || String(a.displayName||a.username).localeCompare(String(b.displayName||b.username)) );
+      const body = $("standingsBody");
+      if(rows.length===0){ body.innerHTML = '<tr><td colspan="4" class="empty">No entries yet — be the first to submit!</td></tr>'; return; }
+      body.innerHTML = "";
+      rows.forEach((r, i)=>{
+        const tr = document.createElement("tr");
+        if(me && r.uid===me.uid) tr.className="me";
+        const name = r.displayName || r.username || "Player";
+        const canView = revealed() || (me && r.uid===me.uid);
+        const nameCell = canView
+          ? `<button class="namebtn" data-uid="${r.uid}" data-name="${name.replace(/"/g,'&quot;')}">${escapeHtml(name)}</button>`
+          : escapeHtml(name);
+        const status = r.submitted ? '<span class="badge in">Submitted</span>' : '<span class="badge no">In progress</span>';
+        tr.innerHTML = `<td class="rank">${i+1}</td><td>${nameCell}</td><td>${status}</td><td class="pts">${r.points||0}</td>`;
+        body.appendChild(tr);
+      });
+      body.querySelectorAll(".namebtn").forEach(b=> b.addEventListener("click", ()=> openPicks(b.dataset.uid, b.dataset.name)) );
+    }, (err)=>{ console.error(err); $("standingsBody").innerHTML = '<tr><td colspan="4" class="empty">Couldn\'t load standings.</td></tr>'; });
+  }
+
+  async function openPicks(uid, name){
+    if(!revealed() && !(me && uid===me.uid)){ alert("Picks are hidden until " + deadlineStr + "."); return; }
+    $("pmName").textContent = name + " — Picks";
+    $("pmSub").textContent = "";
+    $("pmBody").innerHTML = '<div class="loadingline">Loading picks…</div>';
+    $("pickModal").classList.add("show");
+    try{
+      const snap = await getDoc(doc(db, "entries", uid));
+      if(!snap.exists() || !snap.data().picks){ $("pmBody").innerHTML = '<div class="empty">No picks saved.</div>'; return; }
+      renderPicks(snap.data().picks);
+    }catch(e){ console.error(e); $("pmBody").innerHTML = '<div class="empty">These picks aren\'t viewable yet.</div>'; }
+  }
+
+  function renderPicks(p){
+    const adv = p.adv || {}, groups = p.groups || {}, wild = p.wild || {};
+    const champ = adv["bx-CHAMP"] || "—";
+    const fin = [adv["bx-FIN-s0"], adv["bx-FIN-s1"]].filter(Boolean);
+    let html = `<div class="champrow"><div class="lbl">🏆 Predicted Champion</div><div class="val">${escapeHtml(champ)}</div></div>`;
+    if(fin.length) html += `<div class="pk"><span class="k">Finalists</span><span>${fin.map(escapeHtml).join("  vs  ")}</span></div>`;
+    if(p.tiegoals) html += `<div class="pk"><span class="k">Tie-breaker (goals in Final)</span><span>${escapeHtml(p.tiegoals)}</span></div>`;
+
+    html += `<div class="seclbl">Group winners & runners-up</div>`;
+    Object.keys(groups).sort().forEach(L=>{
+      const g = groups[L]||{};
+      if(g.g1 || g.g2) html += `<div class="pk"><span class="k">Group ${L}</span><span>${escapeHtml(g.g1||"—")} · ${escapeHtml(g.g2||"—")}</span></div>`;
+    });
+
+    const advancers = Object.keys(wild).filter(L=> wild[L] && wild[L].adv && wild[L].team).map(L=> wild[L].team);
+    html += `<div class="seclbl">Wildcards (3rd-place advancing)</div>`;
+    html += advancers.length ? `<div class="pk"><span>${advancers.map(escapeHtml).join(", ")}</span></div>` : `<div class="empty">None selected.</div>`;
+
+    $("pmBody").innerHTML = html;
+  }
+
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+</script>
+</body>
+</html>

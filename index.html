@@ -20,6 +20,10 @@
   .btn-clear { background:#efece3; color:#8a4a3e; border:1px solid #d9d5c8; }
   .btn-save { background:#2b2b29; color:#fff; }
   .btn-save:hover { background:#444239; }
+  .btn-submit { background:#c75d4a; color:#fff; }
+  .btn-submit:hover { background:#b34f3d; }
+  .btn-hub { background:#fff; color:#2b2b29; border:1px solid #d9d5c8; border-radius:6px; padding:8px 12px; font-size:12px; font-weight:700; cursor:pointer; }
+  .btn-hub:hover { background:#f6f4ec; }
   .hint { width:100%; font-size:11px; opacity:.7; }
 
   .wrap { overflow-x:auto; padding:18px 12px 50px; }
@@ -214,10 +218,12 @@
   <input class="player" id="pname" placeholder="Your name">
   <button class="btn-pdf" onclick="savePDF()">⬇ Save as PDF</button>
   <button class="btn-save" id="btnSaveNow" type="button">💾 Save picks</button>
+  <button class="btn-submit" id="btnSubmit" type="button">✓ Submit & view hub</button>
   <button class="btn-print" onclick="window.print()">🖨 Print</button>
-  <button class="btn-clear" onclick="clearAll()">Clear</button>
+  <button class="btn-clear" id="btnClear" onclick="clearAll()">Clear</button>
   <span class="authstatus">Signed in as <b id="whoami">—</b></span>
   <span class="savestat" id="saveStatus"></span>
+  <button class="btn-hub" id="btnHub" type="button">📊 Hub</button>
   <button class="btn-logout" id="btnLogout" type="button">Log out</button>
   <div class="hint">Make your picks below, then hit <b>Save as PDF</b> for a backup. Your picks will save to your account in the next update.</div>
 </div>
@@ -887,6 +893,10 @@ populateBracket();
     }
   }
 
+  const DEADLINE_MS = 1781204400000; // June 11, 2026, 3:00 PM EDT
+  function deadlinePassed(){ return Date.now() > DEADLINE_MS; }
+  const EDIT_MODE = new URLSearchParams(location.search).has("edit"); // came from hub "Edit my picks"
+
   async function loadEntry(user){
     setStatus("Loading your picks…","");
     try{
@@ -898,32 +908,57 @@ populateBracket();
 
   async function saveEntry(){
     if(!currentUser) return;
+    if(deadlinePassed()){ setStatus("Picks are locked (deadline passed)","err"); return; }
     setStatus("Saving…","");
     try{
       const username = currentUser.email ? currentUser.email.split("@")[0] : "";
+      const displayName = currentUser.displayName || username;
+      // 1) the private picks document
       await setDoc(doc(db, "entries", currentUser.uid), {
-        uid: currentUser.uid,
-        username,
-        displayName: currentUser.displayName || username,
-        picks: serializePicks(),
-        updatedAt: serverTimestamp()
+        uid: currentUser.uid, username, displayName,
+        picks: serializePicks(), updatedAt: serverTimestamp()
+      }, { merge: true });
+      // 2) the public standings record (no points here — the Cloud Function writes those)
+      await setDoc(doc(db, "players", currentUser.uid), {
+        uid: currentUser.uid, username, displayName, updatedAt: serverTimestamp()
       }, { merge: true });
       const t = new Date();
       setStatus("Saved ✓ " + t.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), "ok");
     }catch(e){ setStatus("Save failed — check connection","err"); console.error(e); }
   }
 
+  async function submitPicks(){
+    if(!currentUser) return;
+    if(deadlinePassed()){ alert("The deadline has passed — picks are locked."); return; }
+    clearTimeout(saveTimer);
+    await saveEntry();
+    try{
+      await setDoc(doc(db, "players", currentUser.uid), { submitted: true, submittedAt: serverTimestamp() }, { merge: true });
+    }catch(e){ console.error(e); }
+    location.href = "hub.html";
+  }
+
+  function applyDeadlineLock(){
+    if(!deadlinePassed()) return;
+    // disable every pick control and the submit/save buttons
+    document.querySelectorAll('#sheet2 select, #sheet2 input, #bracket select, #bracket input, #tiegoals').forEach(el=> el.disabled = true);
+    ["btnSaveNow","btnSubmit","btnClear"].forEach(id=>{ const b=$(id); if(b){ b.disabled = true; b.style.opacity = .5; b.style.cursor = "not-allowed"; } });
+    setStatus("Picks locked — deadline passed","");
+  }
+
   function scheduleSave(){
-    if(!currentUser || restoring) return;
+    if(!currentUser || restoring || deadlinePassed()) return;
     setStatus("Saving…","");
     clearTimeout(saveTimer);
     saveTimer = setTimeout(saveEntry, 800);
   }
-  // any change to picks (groups, wildcards, bracket, tie-breaker) schedules a save
   ["change","input"].forEach(ev=>{
     document.getElementById("sheet2") && document.getElementById("sheet2").addEventListener(ev, scheduleSave);
     document.getElementById("bracket") && document.getElementById("bracket").addEventListener(ev, scheduleSave);
   });
+  const saveNowBtn2 = $("btnSaveNow"); // (listener already added above)
+  const submitBtn = $("btnSubmit"); if(submitBtn) submitBtn.addEventListener("click", submitPicks);
+  const hubBtn = $("btnHub"); if(hubBtn) hubBtn.addEventListener("click", ()=> location.href="hub.html");
 
   onAuthStateChanged(auth, async (user) => {
     if(user){
@@ -934,6 +969,14 @@ populateBracket();
       const pn = $("pname"); if(pn){ pn.value = name; if(window.syncPlayer) window.syncPlayer(); }
       $("auPass").value = "";
       await loadEntry(user);
+      applyDeadlineLock();
+      // Returning, already-submitted users land on the hub (unless they clicked "Edit my picks")
+      if(!EDIT_MODE){
+        try{
+          const ps = await getDoc(doc(db, "players", user.uid));
+          if(ps.exists() && ps.data().submitted){ location.href = "hub.html"; return; }
+        }catch(e){ console.error(e); }
+      }
     } else {
       currentUser = null;
       document.body.classList.add("locked");
