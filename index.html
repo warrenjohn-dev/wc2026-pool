@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>World Cup 2026 — Office Pool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Inter','Segoe UI',system-ui,-apple-system,Roboto,'Helvetica Neue',Arial,sans-serif; color:#2b2b29; background:#f1eee5; }
+
+  .toolbar { position:sticky; top:0; z-index:50; background:#efece3; color:#2b2b29; padding:10px 16px;
+             display:flex; gap:12px; align-items:center; flex-wrap:wrap; border-bottom:1px solid #ddd9cd; box-shadow:0 2px 8px rgba(0,0,0,.08); }
+  .toolbar .ttl { font-weight:800; font-size:15px; letter-spacing:.4px; margin-right:auto; }
+  .toolbar input.player { padding:7px 10px; border:1px solid #d9d5c8; border-radius:6px; font-size:13px; min-width:200px; background:#fdfcf7; color:#2b2b29; }
+  .toolbar button { border:none; border-radius:6px; padding:8px 14px; font-size:13px; font-weight:700; cursor:pointer; }
+  .btn-pdf { background:#c75d4a; color:#fff; } .btn-pdf:hover{ background:#b34f3d; }
+  .btn-print { background:#2b2b29; color:#fff; }
+  .btn-clear { background:#efece3; color:#8a4a3e; border:1px solid #d9d5c8; }
+  .hint { width:100%; font-size:11px; opacity:.7; }
+
+  .wrap { overflow-x:auto; padding:18px 12px 50px; }
+  .sheet { background:#fff; margin:0 auto 22px; padding:20px; border-radius:10px; box-shadow:0 4px 18px rgba(0,0,0,.15); }
+  .sheet.portrait { width:850px; }
+  .sheet.land { width:1150px; }
+
+  .hd { background:linear-gradient(100deg,#2b2b29,#6f6a5d); color:#fff; padding:14px 20px; border-radius:8px;
+        display:flex; align-items:center; justify-content:space-between; }
+  .hd h1 { font-size:23px; letter-spacing:.3px; font-family:Georgia,'Times New Roman',serif; font-weight:700; }
+  .hd .sub { font-size:11px; opacity:.85; margin-top:3px; font-weight:400; }
+  .hd .ball { font-size:30px; }
+  .pagetag { font-size:10px; color:#a8a293; font-weight:700; text-transform:uppercase; letter-spacing:1px; text-align:right; margin-bottom:4px; }
+  .submitline { display:flex; gap:30px; flex-wrap:wrap; margin-top:11px; padding:8px 12px; border:1.5px solid #6f6a5d; border-radius:7px; background:#f6f4ec; font-size:12px; }
+  .submitline b { color:#2b2b29; }
+  .submitline .echo { border-bottom:1px solid #d9d5c8; padding:0 8px; min-width:140px; display:inline-block; color:#2b2b29; }
+
+  .sech { font-size:14px; color:#2b2b29; margin:16px 0 8px; padding-bottom:5px; border-bottom:2px solid #6f6a5d; }
+  .intro { font-size:12px; line-height:1.55; color:#3a382f; }
+  .intro p { margin-bottom:8px; }
+  .steps { display:flex; gap:10px; margin:10px 0; flex-wrap:wrap; }
+  .step { flex:1; min-width:170px; border:1.5px solid #6f6a5d; border-radius:8px; padding:10px 12px; background:#f6f4ec; }
+  .step .num { display:inline-block; width:22px; height:22px; border-radius:50%; background:#6f6a5d; color:#fff; text-align:center; line-height:22px; font-size:12px; font-weight:800; margin-bottom:6px; }
+  .step h4 { font-size:12px; color:#2b2b29; margin-bottom:4px; }
+  .step p { font-size:10.5px; line-height:1.45; color:#57534a; }
+  .callout { font-size:11px; background:#fff6ea; border:1px solid #e7c79a; border-radius:6px; padding:9px 11px; margin-top:8px; line-height:1.5; }
+  .callout b { color:#b5742a; }
+
+  .refgrid { display:flex; flex-wrap:wrap; gap:8px; }
+  .refcard { width:calc(25% - 6px); border:1px solid #e0dccf; border-radius:7px; overflow:hidden; }
+  .refcard .rh { background:#2b2b29; color:#fff; font-size:11px; font-weight:700; padding:4px 8px; }
+  .refcard ol { list-style:none; padding:4px 8px 6px; }
+  .refcard li { font-size:10.5px; padding:2px 0; color:#3a382f; border-top:1px solid #f1eee4; }
+  .refcard li:first-child { border-top:none; }
+  .refcard li .flag { display:inline-block; width:18px; margin-right:5px; font-size:12px; text-align:center; }
+
+  .groupgrid { display:flex; flex-wrap:wrap; gap:9px; }
+  .gcard { width:calc(25% - 7px); border:1.5px solid #6f6a5d; border-radius:7px; overflow:hidden; }
+  .gcard .ghead { background:#6f6a5d; color:#fff; font-size:12px; font-weight:700; padding:5px 8px; }
+  .pickrow { display:flex; align-items:center; gap:6px; padding:5px 8px; font-size:11px; border-top:1px solid #f1eee5; }
+  .pickrow:nth-child(odd){ background:#f6f4ec; }
+  .pickrow label { width:30px; font-weight:700; color:#2b2b29; }
+  .pickrow select, .field { flex:1; padding:4px 6px; font-size:11px; border:1px solid #dad5c7; border-radius:4px; background:#fff; color:#2b2b29; }
+
+  .third { margin-top:14px; border:1.5px dashed #b5742a; border-radius:7px; padding:9px 11px; }
+  .third h3 { font-size:12px; color:#b5742a; margin-bottom:5px; }
+  .third .note { font-size:10px; color:#8a6a3a; margin-bottom:8px; line-height:1.4; }
+  .wccount { float:right; font-size:11px; font-weight:800; color:#b5742a; background:#fff3e3; border:1px solid #e7c79a; border-radius:10px; padding:1px 9px; }
+  .wccount.ok { color:#2b2b29; background:#efebe0; border-color:#cdc8b8; }
+  .wcgrid { display:flex; flex-wrap:wrap; gap:7px; }
+  .wcrow { width:calc(33.33% - 5px); display:flex; align-items:center; gap:6px; font-size:11px;
+           border:1px solid #ead9c2; border-radius:6px; padding:4px 7px; background:#fffaf3; }
+  .wcrow.adv { background:#e9f5ee; border-color:#cdc8b8; }
+  .wcrow .wlbl { font-weight:700; color:#b5742a; white-space:nowrap; }
+  .wcrow.adv .wlbl { color:#2b2b29; }
+  .wcrow select { flex:1; min-width:0; padding:3px 5px; font-size:11px; border:1px solid #d3c1a6; border-radius:4px; background:#fff; }
+  .wcrow .advbox { display:flex; align-items:center; gap:3px; font-size:9px; font-weight:700; color:#6f6a5d; white-space:nowrap; cursor:pointer; }
+  .wcrow input[type=checkbox] { width:15px; height:15px; cursor:pointer; accent-color:#6f6a5d; }
+
+  .legend { display:flex; flex-wrap:wrap; gap:6px 16px; align-items:center; justify-content:center;
+            font-size:9.5px; color:#57534a; background:#f6f4ec; border:1px solid #d7e6df; border-radius:6px;
+            padding:6px 10px; margin:0 auto 10px; max-width:980px; }
+  .legend b { color:#2b2b29; }
+  .legend .lg { font-weight:700; padding:1px 5px; border-radius:3px; }
+  .legend .lg.g { color:#6f6a5d; background:#efebe0; }
+  .legend .lg.o { color:#b5742a; background:#fbeedd; }
+  .legend .lg.n { color:#6a7d73; background:#eef2f0; }
+
+  .score { margin-top:14px; display:flex; gap:11px; }
+  .scorebox { flex:1; border:1.5px solid #2b2b29; border-radius:7px; padding:9px 12px; }
+  .scorebox h3 { font-size:12px; margin-bottom:6px; padding-bottom:4px; border-bottom:2px solid #6f6a5d; color:#2b2b29; }
+  .scorebox ul { list-style:none; font-size:10.5px; }
+  .scorebox li { padding:3px 0; display:flex; justify-content:space-between; gap:8px; }
+  .scorebox li .pts { font-weight:700; color:#6f6a5d; white-space:nowrap; }
+  .scorebox li.rmax { border-top:1.5px solid #e2ddd0; margin-top:3px; padding-top:5px; font-weight:700; color:#2b2b29; }
+  .scorebox li.rmax .pts { color:#2b2b29; }
+  .grandtotal { margin-top:8px; background:#6f6a5d; color:#fff; border-radius:5px; padding:6px 9px; font-size:11.5px; font-weight:800; text-align:center; letter-spacing:.3px; }
+  .scoretable { width:100%; border-collapse:collapse; margin-top:14px; font-size:11px; }
+  .scoretable th { background:#2b2b29; color:#fff; text-align:left; padding:6px 10px; font-size:10.5px; letter-spacing:.3px; }
+  .scoretable th:not(:first-child), .scoretable td:not(:first-child) { text-align:center; }
+  .scoretable td { padding:5px 10px; border-bottom:1px solid #f1eee5; }
+  .scoretable tbody tr:nth-child(odd) { background:#f6f4ec; }
+  .scoretable tr.ttl td { font-weight:800; color:#2b2b29; border-top:2px solid #6f6a5d; background:#f0ece1; }
+  .tiebreak { margin-top:8px; font-size:10px; background:#fff6ea; border:1px solid #e7c79a; border-radius:5px; padding:7px 9px; }
+
+  .bracket-title { text-align:center; margin-bottom:6px; }
+  .bracket-title h2 { font-size:18px; color:#2b2b29; }
+  .bracket-title p { font-size:10px; color:#7a766a; }
+  .autonote { text-align:center; font-size:10px; color:#6f6a5d; background:#f1eee4; border:1px solid #e2ddd0; border-radius:5px; padding:5px 8px; margin:0 auto 8px; max-width:620px; }
+
+  .bracket { display:flex; align-items:stretch; gap:4px; position:relative; }
+  .connlayer { position:absolute; inset:0; z-index:0; pointer-events:none; }
+  .conn { position:absolute; background:#c4bfae; }
+  .ar { position:absolute; width:0; height:0; }
+  .ar.r { border-top:4px solid transparent; border-bottom:4px solid transparent; border-left:6px solid #c4bfae; }
+  .ar.l { border-top:4px solid transparent; border-bottom:4px solid transparent; border-right:6px solid #c4bfae; }
+  .ar.d { border-left:4px solid transparent; border-right:4px solid transparent; border-top:6px solid #c4bfae; }
+  .col { display:flex; flex-direction:column; justify-content:space-around; flex:1; position:relative; z-index:1; }
+  .col.center { flex:1.35; justify-content:center; }
+  .rndlabel { text-align:center; font-size:9px; font-weight:700; color:#6f6a5d; text-transform:uppercase; letter-spacing:.5px; margin-bottom:5px; }
+  .matchwrap { display:flex; flex-direction:column; justify-content:center; flex:1; }
+  .mcap { font-size:7.5px; color:#9aa; font-weight:700; text-align:center; margin-bottom:2px; letter-spacing:.3px; }
+  .seed { font-size:7.5px; color:#6f6a5d; font-weight:700; margin:2px 0 1px; }
+  .seed.thirdseed { color:#b5742a; }
+  .seed.feed { color:#7d8f86; }
+  .boxref { display:block; }
+  .slot { width:100%; height:18px; border:1px solid #d9d5c8; border-radius:4px; background:#fff; font-size:9.5px; padding:1px 4px; color:#2b2b29; }
+  .slot.r16 { background:#f7f5ed; height:19px; }
+  .slot.auto { background:#f0ece1; border-color:#cdc8b8; font-weight:600; }
+  .slot.blank, select.slot.blank { border-color:#d9534f !important; background:#fdecea !important; }
+  #tiegoals.blank { border-color:#d9534f; background:#fdecea; }
+  .capturing .slot.blank, .capturing select.slot.blank, .capturing #tiegoals.blank { border-color:#d9d5c8 !important; background:#fff !important; }
+  .capov { z-index:5; }
+  .slotwrap { display:block; width:100%; }
+  select.slot { -webkit-appearance:menulist; appearance:menulist; cursor:pointer; }
+  .m32 { border:1px solid #e0ebe5; border-radius:5px; padding:3px 4px; background:#fdfcf7; }
+
+  .finalbox { border:2px solid #b5742a; border-radius:8px; padding:9px; text-align:center; background:#fff6ea; }
+  .finalbox .fl { font-size:10px; font-weight:700; color:#b5742a; text-transform:uppercase; letter-spacing:.5px; margin-bottom:7px; }
+  .finalbox .slot { border-color:#b5742a; background:#fff; height:24px; text-align:center; font-size:11px; }
+  .champ { margin-top:11px; border:2.5px solid #6f6a5d; border-radius:8px; padding:10px; text-align:center; background:linear-gradient(180deg,#6f6a5d,#2b2b29); }
+  .champ .cl { font-size:11px; font-weight:800; letter-spacing:1px; color:#fff; }
+  .champ .slot { height:27px; background:#fff; margin-top:7px; text-align:center; font-weight:700; border-color:#2b2b29; font-size:12px; }
+  .tiebox { margin-top:10px; border:1.5px dashed #b5742a; border-radius:7px; padding:8px 10px; text-align:center; }
+  .tiebox label { font-size:10px; font-weight:700; color:#b5742a; display:block; margin-bottom:5px; }
+  .tiebox input { width:70px; height:26px; text-align:center; font-size:14px; font-weight:700; border:1.5px solid #b5742a; border-radius:5px; }
+  .foot { margin-top:10px; text-align:center; font-size:8.5px; color:#a8a293; }
+
+  .capspan { display:inline-block; font-size:9.5px; color:#2b2b29; padding:1px 4px; text-align:center; overflow:hidden; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span class="ttl">&#9917; World Cup 2026 — Office Pool</span>
+  <input class="player" id="pname" placeholder="Your name">
+  <button class="btn-pdf" onclick="savePDF()">⬇ Save as PDF</button>
+  <button class="btn-print" onclick="window.print()">🖨 Print</button>
+  <button class="btn-clear" onclick="clearAll()">Clear</button>
+  <div class="hint">Pick your groups and the bracket fills its Round of 32 automatically. Then hit <b>Save as PDF</b>. For best results open this file in Chrome / Edge / Safari.</div>
+</div>
+
+<div class="wrap">
+
+  <!-- PAGE 1 -->
+  <div class="sheet portrait" id="sheet1">
+    <div class="hd">
+      <div>
+        <h1>FIFA WORLD CUP 2026 — OFFICE POOL</h1>
+        <div class="sub">USA · Canada · Mexico &nbsp;|&nbsp; 48 teams · 12 groups · June 11 – July 19, 2026</div>
+      </div>
+      <div class="ball">&#9917;</div>
+    </div>
+
+    <div class="submitline">
+      <span><b>Submitted by:</b> <span id="echoName" class="echo">—</span></span>
+    </div>
+
+    <h3 class="sech">How the pool works</h3>
+    <div class="intro">
+      <p>This is the first 48-team World Cup, so the format is new. The 48 teams are split into <b>12 groups of four</b>. Each team plays the other three in its group once. You earn points by correctly predicting how far teams go — from the group stage all the way to the champion.</p>
+      <p><b>Who advances:</b> the <b>top two</b> teams from every group go through automatically (24 teams), plus the <b>eight best third-place teams</b> across all 12 groups. That makes <b>32 teams</b> in the knockout Round of 32, then it is single-elimination: Round of 32 → Round of 16 → Quarter-finals → Semi-finals → Final.</p>
+    </div>
+
+    <div class="steps">
+      <div class="step"><span class="num">1</span><h4>Pick Top 2 per group</h4><p>On Page 2, choose who finishes 1st and 2nd in each of the 12 groups.</p></div>
+      <div class="step"><span class="num">2</span><h4>Pick 8 best 3rd-place</h4><p>Choose which eight third-place finishers (of 12 possible) also reach the Round of 32.</p></div>
+      <div class="step"><span class="num">3</span><h4>Bracket auto-fills</h4><p>Page 3's Round of 32 fills in from your group picks. Just advance one winner per match to the Champion.</p></div>
+      <div class="step"><span class="num">4</span><h4>Save &amp; submit</h4><p>Add your Final goals tie-breaker, hit <b>Save as PDF</b>, and send it in before kickoff.</p></div>
+    </div>
+
+    <div class="callout">
+      <b>Deadline:</b> sheets are due before the opening match (Mexico vs South Africa, June 11). &nbsp;<b>Tie-breaker:</b> predict the total goals scored in the Final — closest guess wins the pot (field is on Page 3). &nbsp;Third-place teams are ranked by points, then goal difference, then goals scored.
+    </div>
+
+    <h3 class="sech">The 12 groups</h3>
+    <div class="refgrid" id="refgrid"></div>
+    <div class="foot">Page 1 of 3</div>
+  </div>
+
+  <!-- PAGE 2 -->
+  <div class="sheet portrait" id="sheet2">
+    <div class="pagetag">Page 2 of 3</div>
+    <div class="hd">
+      <div>
+        <h1>PAGE 2 — GROUP STAGE PICKS</h1>
+        <div class="sub">Choose 1st &amp; 2nd in each group, then the 8 best third-place qualifiers</div>
+      </div>
+      <div class="ball">&#9917;</div>
+    </div>
+
+    <h3 class="sech">Group winners &amp; runners-up</h3>
+    <div class="groupgrid" id="groupgrid"></div>
+
+    <div class="third">
+      <h3>&#9733; STEP 2 · WILDCARD ROUND — pick 8 of the 12 third-place teams <span id="wccount" class="wccount">0 / 8</span></h3>
+      <div class="note">There are 12 third-place teams (one per group) but only <b>8 Round-of-32 spots</b> left for them — the other 24 go to the group winners and runners-up. So FIFA ranks all 12 third-place teams against each other and the <b>top 8 advance</b>; the bottom 4 are eliminated. They're ranked by <b>points</b>, then <b>goal difference</b>, then <b>goals scored</b>. Pick that team for each group below, then <b>tick the 8</b> you think finish with the best records — your 8 picks auto-fill the “3rd” slots in the bracket.</div>
+      <div class="wcgrid" id="thirdgrid"></div>
+    </div>
+
+    <div class="score">
+      <div class="scorebox">
+        <h3>SCORING — GROUP STAGE</h3>
+        <ul>
+          <li><span>Correct group winner or runner-up (×24)</span><span class="pts">+1 ea · 24 max pts</span></li>
+          <li><span>Correct wildcard / best-3rd qualifier (×8)</span><span class="pts">+1 ea · 8 max pts</span></li>
+          <li class="rmax"><span>Round-of-32 qualification max</span><span class="pts">32 pts</span></li>
+        </ul>
+      </div>
+      <div class="scorebox">
+        <h3>SCORING — KNOCKOUT (PAGE 3)</h3>
+        <ul>
+          <li><span>Reaches Round of 16 (×16)</span><span class="pts">+2 ea · 32 max pts</span></li>
+          <li><span>Reaches Quarter-finals (×8)</span><span class="pts">+4 ea · 32 max pts</span></li>
+          <li><span>Reaches Semi-finals (×4)</span><span class="pts">+8 ea · 32 max pts</span></li>
+          <li><span>Reaches the Final (×2)</span><span class="pts">+16 ea · 32 max pts</span></li>
+          <li><span>Correct Champion (×1)</span><span class="pts">+50 · 50 max pts</span></li>
+          <li class="rmax"><span>Knockout max</span><span class="pts">178 pts</span></li>
+        </ul>
+        <div class="grandtotal">MAXIMUM POSSIBLE SCORE: 210 pts</div>
+        <div class="tiebreak"><b>Tie-breaker:</b> predict total goals scored in the Final — closest guess wins the pot (enter it on Page 3).</div>
+      </div>
+    </div>
+
+    <table class="scoretable">
+      <thead><tr><th>Stage</th><th>Per correct</th><th>Teams</th><th>Round max</th></tr></thead>
+      <tbody>
+        <tr><td>Qualification (reach R32)</td><td>+1</td><td>32</td><td>32</td></tr>
+        <tr><td>Round of 16</td><td>+2</td><td>16</td><td>32</td></tr>
+        <tr><td>Quarter-finals</td><td>+4</td><td>8</td><td>32</td></tr>
+        <tr><td>Semi-finals</td><td>+8</td><td>4</td><td>32</td></tr>
+        <tr><td>Final</td><td>+16</td><td>2</td><td>32</td></tr>
+        <tr><td>Champion</td><td>+50</td><td>1</td><td>50</td></tr>
+        <tr class="ttl"><td>Total</td><td></td><td></td><td>210</td></tr>
+      </tbody>
+    </table>
+    <div class="foot">Page 2 of 3</div>
+  </div>
+
+  <!-- PAGE 3 -->
+  <div class="sheet land" id="sheet3">
+    <div class="bracket-title">
+      <h2>&#9917; PAGE 3 — KNOCKOUT BRACKET (ROUND OF 32 → CHAMPION)</h2>
+      <p>Each Round-of-32 slot is labeled with the group position that fills it.</p>
+    </div>
+    <div class="autonote">The Round of 32 fills automatically from your Page-2 picks (highlighted green). Advance one winner per match by typing the team into the next slot — arrows show the path to the Champion.</div>
+    <div class="legend">
+      <b>How to read the slots:</b>
+      <span><span class="lg g">Winner E</span> = your 1st-place team in that group</span>
+      <span><span class="lg g">Runner-up A</span> = your 2nd-place team</span>
+      <span><span class="lg o">3rd: A/B/C/D/F</span> = a wildcard 3rd-place team from one of those groups</span>
+      <span><span class="lg n">W M74</span> = winner of Match 74 — write in the team you're advancing</span>
+    </div>
+    <div class="bracket" id="bracket"></div>
+    <div class="foot">Match numbers &amp; host cities shown above each pairing · Final: July 19, MetLife Stadium, New Jersey · Page 3 of 3</div>
+  </div>
+
+</div>
+
+<script>
+window.requestAnimationFrame = window.requestAnimationFrame || function(cb){ return setTimeout(cb,16); };
+const GROUPS = {
+  A:["Mexico","South Korea","South Africa","Czechia"],
+  B:["Canada","Switzerland","Qatar","Bosnia-Herzegovina"],
+  C:["Brazil","Morocco","Scotland","Haiti"],
+  D:["USA","Paraguay","Australia","Turkiye"],
+  E:["Germany","Ecuador","Ivory Coast","Curacao"],
+  F:["Netherlands","Japan","Tunisia","Sweden"],
+  G:["Belgium","Iran","Egypt","New Zealand"],
+  H:["Spain","Uruguay","Saudi Arabia","Cape Verde"],
+  I:["France","Senegal","Norway","Iraq"],
+  J:["Argentina","Austria","Algeria","Jordan"],
+  K:["Portugal","Colombia","Uzbekistan","DR Congo"],
+  L:["England","Croatia","Panama","Ghana"]
+};
+const ALL_TEAMS = Object.values(GROUPS).flat().sort();
+const TEAM_GROUP = {}; Object.entries(GROUPS).forEach(([g,ts])=>ts.forEach(t=>TEAM_GROUP[t]=g));
+const FLAGS = {
+  "Mexico":"🇲🇽","South Korea":"🇰🇷","South Africa":"🇿🇦","Czechia":"🇨🇿",
+  "Canada":"🇨🇦","Switzerland":"🇨🇭","Qatar":"🇶🇦","Bosnia-Herzegovina":"🇧🇦",
+  "Brazil":"🇧🇷","Morocco":"🇲🇦","Scotland":"🏴󠁧󠁢󠁳󠁣󠁴󠁿","Haiti":"🇭🇹",
+  "USA":"🇺🇸","Paraguay":"🇵🇾","Australia":"🇦🇺","Turkiye":"🇹🇷",
+  "Germany":"🇩🇪","Ecuador":"🇪🇨","Ivory Coast":"🇨🇮","Curacao":"🇨🇼",
+  "Netherlands":"🇳🇱","Japan":"🇯🇵","Tunisia":"🇹🇳","Sweden":"🇸🇪",
+  "Belgium":"🇧🇪","Iran":"🇮🇷","Egypt":"🇪🇬","New Zealand":"🇳🇿",
+  "Spain":"🇪🇸","Uruguay":"🇺🇾","Saudi Arabia":"🇸🇦","Cape Verde":"🇨🇻",
+  "France":"🇫🇷","Senegal":"🇸🇳","Norway":"🇳🇴","Iraq":"🇮🇶",
+  "Argentina":"🇦🇷","Austria":"🇦🇹","Algeria":"🇩🇿","Jordan":"🇯🇴",
+  "Portugal":"🇵🇹","Colombia":"🇨🇴","Uzbekistan":"🇺🇿","DR Congo":"🇨🇩",
+  "England":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Croatia":"🇭🇷","Panama":"🇵🇦","Ghana":"🇬🇭"
+};
+
+/* Group reference (Page 1) */
+const refgrid=document.getElementById('refgrid');
+Object.entries(GROUPS).forEach(([letter,teams])=>{
+  const c=document.createElement('div'); c.className='refcard';
+  c.innerHTML='<div class="rh">GROUP '+letter+'</div><ol>'+teams.map(t=>'<li><span class="flag">'+(FLAGS[t]||'')+'</span>'+t+'</li>').join('')+'</ol>';
+  refgrid.appendChild(c);
+});
+
+/* Group pick cards (Page 2) */
+const gg=document.getElementById('groupgrid');
+Object.entries(GROUPS).forEach(([letter,teams])=>{
+  const card=document.createElement('div'); card.className='gcard'; card.dataset.letter=letter; card.dataset.teams=JSON.stringify(teams);
+  card.innerHTML='<div class="ghead">GROUP '+letter+'</div>'+
+    '<div class="pickrow"><label>1st</label><select class="g1"></select></div>'+
+    '<div class="pickrow"><label>2nd</label><select class="g2"></select></div>';
+  gg.appendChild(card);
+  rebuildGroup(card);
+  card.querySelector('.g1').addEventListener('change',()=>{rebuildGroup(card);populateBracket();});
+  card.querySelector('.g2').addEventListener('change',()=>{rebuildGroup(card);populateBracket();});
+});
+function rebuildGroup(card){
+  const teams=JSON.parse(card.dataset.teams);
+  const g1=card.querySelector('.g1'), g2=card.querySelector('.g2');
+  const v1=g1.value, v2=g2.value;
+  g1.innerHTML='<option value=""></option>'+teams.filter(t=>t!==v2).map(t=>'<option '+(t===v1?'selected':'')+'>'+t+'</option>').join('');
+  g2.innerHTML='<option value=""></option>'+teams.filter(t=>t!==v1).map(t=>'<option '+(t===v2?'selected':'')+'>'+t+'</option>').join('');
+}
+
+/* Wildcard round (Page 2) — one row per group, pick 8 of 12 */
+const tg=document.getElementById('thirdgrid');
+Object.entries(GROUPS).forEach(([letter,teams])=>{
+  const row=document.createElement('div'); row.className='wcrow'; row.dataset.letter=letter;
+  row.innerHTML='<span class="wlbl">3rd · '+letter+'</span>'+
+    '<select class="third3"></select>'+
+    '<label class="advbox"><input type="checkbox" class="adv">adv</label>';
+  tg.appendChild(row);
+  refreshThirdTeam(row);
+  row.querySelector('.third3').addEventListener('change',function(){
+    populateBracket();
+  });
+  row.querySelector('.adv').addEventListener('change',function(){
+    if(this.checked){
+      const sel=row.querySelector('.third3');
+      // if they ticked without choosing a team, default to the first available 3rd-place option
+      if(!sel.value){ const opt=[...sel.options].find(o=>o.value); if(opt) sel.value=opt.value; }
+    }
+    row.classList.toggle('adv', this.checked);
+    enforceWildcardCap(this);
+    populateBracket();
+  });
+});
+/* Keep at most 8 wildcards ticked */
+function enforceWildcardCap(justChecked){
+  const checked=[...document.querySelectorAll('.adv:checked')];
+  if(checked.length>8){
+    if(justChecked){ justChecked.checked=false; justChecked.closest('.wcrow').classList.remove('adv'); }
+    else { const last=checked[checked.length-1]; last.checked=false; last.closest('.wcrow').classList.remove('adv'); }
+    alert('Only 8 third-place teams advance as wildcards. Untick one first.');
+  }
+}
+/* Each group's 3rd-place options = that group's teams minus the 1st/2nd you picked */
+function refreshThirdTeam(row){
+  const letter=row.dataset.letter;
+  const teams=GROUPS[letter];
+  const card=[...document.querySelectorAll('.gcard')].find(c=>c.dataset.letter===letter);
+  const used=new Set();
+  if(card){ const a=card.querySelector('.g1').value, b=card.querySelector('.g2').value; if(a)used.add(a); if(b)used.add(b); }
+  const sel=row.querySelector('.third3'); const cur=sel.value;
+  const avail=teams.filter(t=>!used.has(t) || t===cur);
+  sel.innerHTML='<option value=""></option>'+avail.map(t=>'<option '+(t===cur?'selected':'')+'>'+t+'</option>').join('');
+}
+function updateWildcardCount(){
+  const n=document.querySelectorAll('.adv:checked').length;
+  const el=document.getElementById('wccount');
+  if(el){ el.textContent=n+' / 8'; el.classList.toggle('ok', n===8); }
+}
+
+/* ---------- BRACKET ---------- */
+const R32 = {
+  73:{city:"Los Angeles", a:"Runner-up A", b:"Runner-up B"},
+  74:{city:"Boston", a:"Winner E", b:"3rd: A/B/C/D/F"},
+  75:{city:"Monterrey", a:"Winner F", b:"Runner-up C"},
+  76:{city:"Houston", a:"Winner C", b:"Runner-up F"},
+  77:{city:"New York–NJ", a:"Winner I", b:"3rd: C/D/F/G/H"},
+  78:{city:"Dallas", a:"Runner-up E", b:"Runner-up I"},
+  79:{city:"Mexico City", a:"Winner A", b:"3rd: C/E/F/H/I"},
+  80:{city:"Atlanta", a:"Winner L", b:"3rd: E/H/I/J/K"},
+  81:{city:"SF Bay Area", a:"Winner D", b:"3rd: B/E/F/I/J"},
+  82:{city:"Seattle", a:"Winner G", b:"3rd: A/E/H/I/J"},
+  83:{city:"Toronto", a:"Runner-up K", b:"Runner-up L"},
+  84:{city:"Los Angeles", a:"Winner H", b:"Runner-up J"},
+  85:{city:"Vancouver", a:"Winner B", b:"3rd: E/F/G/I/J"},
+  86:{city:"Miami", a:"Winner J", b:"Runner-up H"},
+  87:{city:"Kansas City", a:"Winner K", b:"3rd: D/E/I/J/L"},
+  88:{city:"Dallas", a:"Runner-up D", b:"Runner-up G"}
+};
+const LEFT_R32=[74,77,73,75,83,84,81,82];
+const RIGHT_R32=[76,78,79,80,86,88,85,87];
+/* Each later match has TWO participant slots (the winners of two earlier matches). */
+const LEFT_R16=[
+  {label:"M89 · R16 · Philadelphia", top:"W M74", bot:"W M77"},
+  {label:"M90 · R16 · Houston",      top:"W M73", bot:"W M75"},
+  {label:"M93 · R16 · Dallas",       top:"W M83", bot:"W M84"},
+  {label:"M94 · R16 · Seattle",      top:"W M81", bot:"W M82"}
+];
+const RIGHT_R16=[
+  {label:"M91 · R16 · New York–NJ",  top:"W M76", bot:"W M78"},
+  {label:"M92 · R16 · Mexico City",  top:"W M79", bot:"W M80"},
+  {label:"M95 · R16 · Atlanta",      top:"W M86", bot:"W M88"},
+  {label:"M96 · R16 · Vancouver",    top:"W M85", bot:"W M87"}
+];
+const LEFT_QF=[
+  {label:"M97 · QF · Boston",        top:"W M89", bot:"W M90"},
+  {label:"M98 · QF · Los Angeles",   top:"W M93", bot:"W M94"}
+];
+const RIGHT_QF=[
+  {label:"M99 · QF · Miami",         top:"W M91", bot:"W M92"},
+  {label:"M100 · QF · Kansas City",  top:"W M95", bot:"W M96"}
+];
+const LEFT_SF={label:"SF1 · M101 · Dallas",  top:"W M97", bot:"W M98"};
+const RIGHT_SF={label:"SF2 · M102 · Atlanta", top:"W M99", bot:"W M100"};
+
+function seedAttrs(label){
+  if(label.indexOf('Winner ')===0) return {attr:' data-fill="W" data-grp="'+label.split(' ').pop()+'"', third:false};
+  if(label.indexOf('Runner-up ')===0) return {attr:' data-fill="RU" data-grp="'+label.split(' ').pop()+'"', third:false};
+  if(label.indexOf('3rd')===0){ const elig=label.split(': ')[1].split('/').join(','); return {attr:' data-fill="3" data-elig="'+elig+'"', third:true}; }
+  return {attr:'', third:false};
+}
+function r32match(code, idx, side){
+  const m=R32[code], id='bx-'+side+'32-'+idx;
+  const sa=seedAttrs(m.a), sb=seedAttrs(m.b);
+  return '<div class="matchwrap"><div class="m32" id="'+id+'">'+
+      '<div class="mcap">M'+code+' · '+m.city+'</div>'+
+      '<div class="seed'+(sa.third?' thirdseed':'')+'">'+m.a+'</div>'+
+      '<input class="slot'+(sa.third?' thirdslot':'')+'"'+sa.attr+'>'+
+      '<div class="seed'+(sb.third?' thirdseed':'')+'">'+m.b+'</div>'+
+      '<input class="slot'+(sb.third?' thirdslot':'')+'"'+sb.attr+'>'+
+    '</div></div>';
+}
+/* A knockout match with two slots (winners of two prior matches advance here). */
+function laterMatch(m, boxId, srcS0, srcS1){
+  return '<div class="matchwrap"><div class="m32" id="'+boxId+'">'+
+      '<div class="mcap">'+m.label+'</div>'+
+      '<div class="seed feed">'+m.top+'</div><span class="slotwrap" id="'+boxId+'-s0" data-src="'+srcS0+'"><select class="slot r16 advslot"></select></span>'+
+      '<div class="seed feed">'+m.bot+'</div><span class="slotwrap" id="'+boxId+'-s1" data-src="'+srcS1+'"><select class="slot r16 advslot"></select></span>'+
+    '</div></div>';
+}
+function buildHalf(side){
+  const r32=side==='L'?LEFT_R32:RIGHT_R32, r16=side==='L'?LEFT_R16:RIGHT_R16, qf=side==='L'?LEFT_QF:RIGHT_QF, sf=side==='L'?LEFT_SF:RIGHT_SF;
+  const c32='<div class="col"><div class="rndlabel">Round of 32</div>'+r32.map((c,i)=>r32match(c,i,side)).join('')+'</div>';
+  // each R16 slot is fed by one R32 match (its two teams are the candidates)
+  const c16='<div class="col"><div class="rndlabel">Round of 16</div>'+r16.map((m,i)=>laterMatch(m,'bx-'+side+'16-'+i,'bx-'+side+'32-'+(2*i),'bx-'+side+'32-'+(2*i+1))).join('')+'</div>';
+  // each QF slot is fed by one R16 match (the two teams you advanced there)
+  const cqf='<div class="col"><div class="rndlabel">Quarter-finals</div>'+qf.map((m,i)=>laterMatch(m,'bx-'+side+'QF-'+i,'bx-'+side+'16-'+(2*i),'bx-'+side+'16-'+(2*i+1))).join('')+'</div>';
+  // SF slots fed by the two QF matches
+  const csf='<div class="col"><div class="rndlabel">Semi-finals</div>'+laterMatch(sf,'bx-'+side+'SF','bx-'+side+'QF-0','bx-'+side+'QF-1')+'</div>';
+  let cols=[c32,c16,cqf,csf];
+  if(side==='R') cols=cols.reverse();
+  return cols.join('');
+}
+const center=
+  '<div class="col center">'+
+    '<div class="rndlabel">Final · July 19</div>'+
+    '<div class="finalbox" id="bx-FINALBOX"><div class="fl">&#127942; THE FINAL · M104 · New York–NJ</div>'+
+      '<div class="seed feed" style="text-align:center">W M101 (SF1)</div><span class="slotwrap" id="bx-FIN-s0" data-src="bx-LSF"><select class="slot advslot"></select></span>'+
+      '<div class="seed feed" style="text-align:center">W M102 (SF2)</div><span class="slotwrap" id="bx-FIN-s1" data-src="bx-RSF"><select class="slot advslot"></select></span>'+
+    '</div>'+
+    '<div class="champ"><div class="cl">&#127942; CHAMPION</div><span class="slotwrap" id="bx-CHAMP" data-src="bx-FINALBOX"><select class="slot advslot"></select></span></div>'+
+    '<div class="tiebox"><label>TIE-BREAKER — total goals in the Final</label><input id="tiegoals" type="number" min="0" placeholder="0"></div>'+
+  '</div>';
+document.getElementById('bracket').innerHTML='<div class="connlayer" id="connlayer"></div>'+buildHalf('L')+center+buildHalf('R');
+document.querySelectorAll('select.advslot').forEach(s=>s.addEventListener('change', updateAfterAdvance));
+
+/* ---------- Auto-populate R32 ---------- */
+function populateBracket(){
+  const first={}, second={};
+  document.querySelectorAll('.gcard').forEach(card=>{
+    const L=card.dataset.letter;
+    first[L]=card.querySelector('.g1').value;
+    second[L]=card.querySelector('.g2').value;
+  });
+  document.querySelectorAll('input[data-fill]').forEach(inp=>{
+    const f=inp.dataset.fill;
+    if(f==='W'){ setAuto(inp, first[inp.dataset.grp]||''); }
+    else if(f==='RU'){ setAuto(inp, second[inp.dataset.grp]||''); }
+  });
+  document.querySelectorAll('.wcrow').forEach(refreshThirdTeam);
+  updateWildcardCount();
+  autoThirds();
+  refreshAdvanceOptions();
+  markBlanks();
+}
+/* Each knockout dropdown shows ONLY the two teams in that match —
+   i.e. the two team-values sitting in the match that feeds this slot. */
+function getCandidates(srcId){
+  const box=document.getElementById(srcId); if(!box) return [];
+  return [...box.querySelectorAll('input.slot, select.advslot')].map(c=>c.value).filter(Boolean);
+}
+function refreshAdvanceOptions(){
+  // several passes so picks cascade R16 → QF → SF → Final → Champion in one update
+  for(let pass=0; pass<4; pass++){
+    document.querySelectorAll('select.advslot').forEach(sel=>{
+      const wrap=sel.closest('.slotwrap');
+      const cands = wrap ? getCandidates(wrap.dataset.src) : [];
+      const cur=sel.value;
+      const keep = (cur && cands.includes(cur)) ? cur : '';
+      sel.innerHTML='<option value=""></option>'+cands.map(t=>'<option '+(t===keep?'selected':'')+'>'+t+'</option>').join('');
+      sel.value=keep;
+    });
+  }
+}
+function updateAfterAdvance(){ refreshAdvanceOptions(); markBlanks(); }
+/* Empty slot (R32 → Champion) and the tie-breaker show red until filled */
+function markBlanks(){
+  document.querySelectorAll('#bracket input.slot, #bracket select.slot').forEach(el=>{ el.classList.toggle('blank', !el.value); });
+  const tg=document.getElementById('tiegoals'); if(tg) tg.classList.toggle('blank', !tg.value);
+}
+document.getElementById('bracket').addEventListener('change', updateAfterAdvance);
+document.getElementById('tiegoals').addEventListener('input', markBlanks);
+/* Echo name onto Page 1 so it appears in the saved PDF */
+function syncPlayer(){
+  document.getElementById('echoName').textContent = document.getElementById('pname').value || '—';
+}
+document.getElementById('pname').addEventListener('input', syncPlayer);
+syncPlayer();
+function setAuto(inp,val){ inp.value=val; inp.classList.toggle('auto', !!val); }
+/* Take the 8 ticked wildcard teams and slot them into eligible R32 "3rd" boxes */
+function autoThirds(){
+  const teams=[];
+  document.querySelectorAll('.wcrow').forEach(row=>{
+    const adv=row.querySelector('.adv').checked;
+    const t=row.querySelector('.third3').value;
+    if(adv && t){ teams.push({t, g:row.dataset.letter}); }
+  });
+  const slots=[...document.querySelectorAll('.thirdslot')].map(el=>({el, elig:new Set((el.dataset.elig||'').split(','))}));
+  const slotTeam=new Array(slots.length).fill(-1);
+  function tryAssign(ti, seen){
+    for(let si=0; si<slots.length; si++){
+      if(slots[si].elig.has(teams[ti].g) && !seen[si]){
+        seen[si]=true;
+        if(slotTeam[si]<0 || tryAssign(slotTeam[si], seen)){ slotTeam[si]=ti; return true; }
+      }
+    }
+    return false;
+  }
+  for(let ti=0; ti<teams.length; ti++){ tryAssign(ti, new Array(slots.length).fill(false)); }
+  slots.forEach((s,si)=>{ setAuto(s.el, slotTeam[si]>=0 ? teams[slotTeam[si]].t : ''); });
+}
+
+/* ---------- Connector lines ---------- */
+const conns=[];
+['L','R'].forEach(s=>{
+  // R32 match -> specific slot of its R16 match (top feeder -> s0, bottom feeder -> s1)
+  for(let i=0;i<8;i++){ const k=Math.floor(i/2), sl=i%2; conns.push(['bx-'+s+'32-'+i,'bx-'+s+'16-'+k+'-s'+sl,s]); }
+  // R16 match -> slot of its QF match
+  for(let i=0;i<4;i++){ const k=Math.floor(i/2), sl=i%2; conns.push(['bx-'+s+'16-'+i,'bx-'+s+'QF-'+k+'-s'+sl,s]); }
+  // QF match -> slot of the SF match
+  for(let i=0;i<2;i++){ conns.push(['bx-'+s+'QF-'+i,'bx-'+s+'SF-s'+i,s]); }
+});
+conns.push(['bx-LSF','bx-FIN-s0','L']);
+conns.push(['bx-RSF','bx-FIN-s1','R']);
+conns.push(['bx-FIN-s0','bx-CHAMP','down']);
+conns.push(['bx-FIN-s1','bx-CHAMP','down']);
+
+function drawConnectors(){
+  const bracket=document.getElementById('bracket'); const layer=document.getElementById('connlayer');
+  if(!bracket||!layer) return;
+  layer.innerHTML='';
+  const br=bracket.getBoundingClientRect();
+  const box=id=>{ const e=document.getElementById(id); if(!e) return null; const r=e.getBoundingClientRect();
+    return {l:r.left-br.left, t:r.top-br.top, r:r.right-br.left, b:r.bottom-br.top, cx:(r.left+r.right)/2-br.left, cy:(r.top+r.bottom)/2-br.top}; };
+  const hseg=(x1,x2,y)=>{ const d=document.createElement('div'); d.className='conn'; d.style.left=Math.min(x1,x2)+'px'; d.style.top=(y-1)+'px'; d.style.width=Math.max(1,Math.abs(x2-x1))+'px'; d.style.height='2px'; layer.appendChild(d); };
+  const vseg=(y1,y2,x)=>{ const d=document.createElement('div'); d.className='conn'; d.style.left=(x-1)+'px'; d.style.top=Math.min(y1,y2)+'px'; d.style.height=Math.max(1,Math.abs(y2-y1))+'px'; d.style.width='2px'; layer.appendChild(d); };
+  const arrow=(x,y,dir)=>{ const a=document.createElement('div'); a.className='ar '+dir;
+    if(dir==='r'){ a.style.left=(x-6)+'px'; a.style.top=(y-4)+'px'; }
+    else if(dir==='l'){ a.style.left=x+'px'; a.style.top=(y-4)+'px'; }
+    else { a.style.left=(x-4)+'px'; a.style.top=(y-6)+'px'; }
+    layer.appendChild(a); };
+  conns.forEach(([fId,tId,side])=>{
+    const F=box(fId), T=box(tId); if(!F||!T) return;
+    if(side==='L'){ const x1=F.r,y1=F.cy,x2=T.l,y2=T.cy,mx=(x1+x2)/2; hseg(x1,mx,y1); vseg(y1,y2,mx); hseg(mx,x2,y2); arrow(x2,y2,'r'); }
+    else if(side==='R'){ const x1=F.l,y1=F.cy,x2=T.r,y2=T.cy,mx=(x1+x2)/2; hseg(mx,x1,y1); vseg(y1,y2,mx); hseg(x2,mx,y2); arrow(x2,y2,'l'); }
+    else { const x1=F.cx,y1=F.b,x2=T.cx,y2=T.t,my=(y1+y2)/2; vseg(y1,my,x1); hseg(x1,x2,my); vseg(my,y2,x2); arrow(x2,y2,'d'); }
+  });
+}
+window.addEventListener('resize',()=>requestAnimationFrame(drawConnectors));
+requestAnimationFrame(()=>requestAnimationFrame(drawConnectors));
+
+/* ---------- Controls ---------- */
+function clearAll(){
+  if(!confirm('Clear all picks?')) return;
+  document.querySelectorAll('.gcard').forEach(c=>{ c.querySelector('.g1').value=''; c.querySelector('.g2').value=''; rebuildGroup(c); });
+  document.querySelectorAll('.third3').forEach(s=>s.value='');
+  document.querySelectorAll('.adv').forEach(cb=>{ cb.checked=false; cb.closest('.wcrow').classList.remove('adv'); });
+  document.querySelectorAll('input.slot').forEach(i=>{ i.value=''; i.classList.remove('auto'); });
+  document.querySelectorAll('select.advslot').forEach(s=>{ s.value=''; });
+  const tg=document.getElementById('tiegoals'); if(tg) tg.value='';
+  document.getElementById('pname').value='';
+  populateBracket();
+}
+
+/* ---------- PDF export ----------
+   Capture draws each value as an absolutely-positioned overlay ON TOP of its
+   control, instead of removing the control (which broke flex layouts). */
+function prepCapture(on){
+  if(on){
+    document.body.classList.add('capturing');
+    document.querySelectorAll('.sheet').forEach(s=>{ s.dataset.prevPos=s.style.position||''; s.style.position='relative'; });
+    document.querySelectorAll('select, input.slot, #tiegoals, .adv').forEach(el=>{
+      const sheet=el.closest('.sheet'); if(!sheet) return;
+      const r=el.getBoundingClientRect(), sr=sheet.getBoundingClientRect();
+      if(r.width===0 && r.height===0) return;
+      const cs=getComputedStyle(el);
+      let txt;
+      if(el.type==='checkbox'){ txt = el.checked?'☑':'☐'; }
+      else if(el.tagName==='SELECT'){ txt = el.options[el.selectedIndex]?el.options[el.selectedIndex].text:''; }
+      else { txt = el.value||''; }
+      const span=document.createElement('span'); span.className='capov'; span.textContent=txt;
+      const justify = el.type==='checkbox' ? 'center' : (cs.textAlign==='center'?'center':'flex-start');
+      span.style.cssText='position:absolute;left:'+(r.left-sr.left)+'px;top:'+(r.top-sr.top)+'px;width:'+r.width+'px;height:'+r.height+'px;'+
+        'display:flex;align-items:center;justify-content:'+justify+';padding:0 4px;box-sizing:border-box;pointer-events:none;'+
+        'overflow:hidden;white-space:nowrap;color:#2b2b29;font-weight:'+cs.fontWeight+';'+
+        'font-size:'+(el.type==='checkbox'?'13px':cs.fontSize)+';font-family:'+cs.fontFamily+';';
+      el.dataset.capId='1';
+      if(el.type==='checkbox'){ el.dataset.prevOpacity=el.style.opacity||''; el.style.opacity='0'; }
+      else { el.dataset.prevColor=el.style.color||''; el.style.color='transparent'; }
+      sheet.appendChild(span);
+    });
+  } else {
+    document.querySelectorAll('.capov').forEach(s=>s.remove());
+    document.querySelectorAll('[data-cap-id]').forEach(el=>{
+      if(el.type==='checkbox'){ el.style.opacity=el.dataset.prevOpacity||''; el.removeAttribute('data-prev-opacity'); }
+      else { el.style.color=el.dataset.prevColor||''; el.removeAttribute('data-prev-color'); }
+      el.removeAttribute('data-cap-id');
+    });
+    document.querySelectorAll('.sheet').forEach(s=>{ s.style.position=s.dataset.prevPos||''; s.removeAttribute('data-prev-pos'); });
+    document.body.classList.remove('capturing');
+  }
+}
+function addFitted(doc, canvas){
+  const pw=doc.internal.pageSize.getWidth(), ph=doc.internal.pageSize.getHeight(), m=20;
+  const maxW=pw-m*2, maxH=ph-m*2;
+  let w=maxW, h=canvas.height*(w/canvas.width);
+  if(h>maxH){ h=maxH; w=canvas.width*(h/canvas.height); }
+  doc.addImage(canvas.toDataURL('image/jpeg',0.95),'JPEG',(pw-w)/2,(ph-h)/2,w,h);
+}
+async function savePDF(){
+  const btn=document.querySelector('.btn-pdf'); const old=btn.textContent;
+  btn.textContent='Generating…'; btn.disabled=true;
+  try{
+    prepCapture(true);
+    await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+    drawConnectors();
+    const opts={scale:2, backgroundColor:'#ffffff', useCORS:true, logging:false};
+    const c1=await html2canvas(document.getElementById('sheet1'),opts);
+    const c2=await html2canvas(document.getElementById('sheet2'),opts);
+    const c3=await html2canvas(document.getElementById('sheet3'),opts);
+    prepCapture(false);
+    drawConnectors();
+    const { jsPDF }=window.jspdf;
+    const doc=new jsPDF({orientation:'portrait',unit:'pt',format:'letter'});
+    addFitted(doc,c1);
+    doc.addPage('letter','portrait'); addFitted(doc,c2);
+    doc.addPage('letter','landscape'); addFitted(doc,c3);
+    const nm=(document.getElementById('pname').value||'bracket').trim().replace(/[^\w\-]+/g,'_');
+    doc.save('WorldCup2026_'+nm+'.pdf');
+  }catch(e){
+    prepCapture(false); drawConnectors();
+    alert('PDF export failed in this view. Open the file directly in your browser, or use Print → “Save as PDF”.');
+    console.error(e);
+  }finally{ btn.textContent=old; btn.disabled=false; }
+}
+
+populateBracket();
+</script>
+</body>
+</html>
