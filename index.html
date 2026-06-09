@@ -173,6 +173,8 @@
   .autherr.show { display:block; }
   .authnote { margin-top:16px; font-size:11px; color:#a8a293; text-align:center; line-height:1.5; }
   .authswitch { margin-top:16px; font-size:12.5px; color:#7a766a; text-align:center; }
+  .remember { display:flex; align-items:center; gap:8px; font-size:12.5px; color:#57534a; margin-top:16px; text-transform:none; letter-spacing:0; font-weight:500; cursor:pointer; }
+  .remember input { width:16px; height:16px; accent-color:#c75d4a; cursor:pointer; }
   .authswitch a { color:#c75d4a; font-weight:700; text-decoration:none; margin-left:5px; }
   .authswitch a:hover { text-decoration:underline; }
   .authstatus { font-size:12px; color:#57534a; display:flex; align-items:center; gap:8px; }
@@ -201,6 +203,8 @@
 
     <label for="auPass">Password</label>
     <input id="auPass" type="password" placeholder="at least 6 characters" autocomplete="current-password">
+
+    <label class="remember"><input type="checkbox" id="auRemember" checked> Remember me on this device</label>
 
     <div class="authbtns">
       <button id="btnPrimary" type="button">Log in</button>
@@ -761,7 +765,10 @@ populateBracket();
     signInWithEmailAndPassword,
     signOut,
     updateProfile,
-    onAuthStateChanged
+    onAuthStateChanged,
+    setPersistence,
+    browserLocalPersistence,
+    browserSessionPersistence
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import {
     doc, getDoc, setDoc, serverTimestamp
@@ -797,6 +804,12 @@ populateBracket();
   }
   $("switchLink").addEventListener("click", (e)=>{ e.preventDefault(); setMode(mode === "login" ? "signup" : "login"); });
 
+  async function applyPersistence(){
+    const remember = $("auRemember") ? $("auRemember").checked : true;
+    try{ await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence); }
+    catch(e){ console.error("persistence", e); }
+  }
+
   async function doSignup(){
     clearErr();
     const display = $("auDisplay").value.trim();
@@ -805,6 +818,7 @@ populateBracket();
     if(!display) return showErr("Please enter a display name for the leaderboard.");
     if(!validUsername(user)) return showErr("Username must be 3–20 letters, numbers, or underscores (no spaces).");
     if(pass.length < 6) return showErr("Password must be at least 6 characters.");
+    await applyPersistence();
     try {
       const cred = await createUserWithEmailAndPassword(auth, usernameToEmail(user), pass);
       await updateProfile(cred.user, { displayName: display });
@@ -821,6 +835,7 @@ populateBracket();
     const pass = $("auPass").value;
     if(!validUsername(user)) return showErr("Enter your username (letters & numbers).");
     if(!pass) return showErr("Enter your password.");
+    await applyPersistence();
     try {
       await signInWithEmailAndPassword(auth, usernameToEmail(user), pass);
     } catch(e){
