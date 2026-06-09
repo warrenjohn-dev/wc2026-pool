@@ -172,6 +172,9 @@
   .authstatus { font-size:12px; color:#57534a; display:flex; align-items:center; gap:8px; }
   .authstatus b { color:#2b2b29; }
   .btn-logout { background:#efece3; color:#57534a; border:1px solid #d9d5c8; border-radius:6px; padding:8px 12px; font-size:12px; font-weight:700; cursor:pointer; }
+  .savestat { font-size:11.5px; font-weight:700; color:#a8a293; }
+  .savestat.ok { color:#3e7d54; }
+  .savestat.err { color:#b3402e; }
 </style>
 </head>
 <body class="locked">
@@ -211,6 +214,7 @@
   <button class="btn-print" onclick="window.print()">🖨 Print</button>
   <button class="btn-clear" onclick="clearAll()">Clear</button>
   <span class="authstatus">Signed in as <b id="whoami">—</b></span>
+  <span class="savestat" id="saveStatus"></span>
   <button class="btn-logout" id="btnLogout" type="button">Log out</button>
   <div class="hint">Make your picks below, then hit <b>Save as PDF</b> for a backup. Your picks will save to your account in the next update.</div>
 </div>
@@ -742,7 +746,7 @@ populateBracket();
 </script>
 <!-- ===== Auth (username sign up / log in) ===== -->
 <script type="module">
-  import { auth, usernameToEmail } from "./firebase-init.js";
+  import { auth, db, usernameToEmail } from "./firebase-init.js";
   import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
@@ -750,6 +754,9 @@ populateBracket();
     updateProfile,
     onAuthStateChanged
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import {
+    doc, getDoc, setDoc, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const $ = id => document.getElementById(id);
   const errBox = $("authErr");
@@ -822,16 +829,111 @@ populateBracket();
 
   function humanize(e){ return (e && e.message ? e.message.replace("Firebase:", "").trim() : "Something went wrong."); }
 
-  onAuthStateChanged(auth, (user) => {
+  /* ===================== Firestore: save / load picks ===================== */
+  let currentUser = null;
+  let restoring = false;
+  let saveTimer = null;
+  const statusEl = $("saveStatus");
+  function setStatus(text, cls){ if(!statusEl) return; statusEl.textContent = text; statusEl.className = "savestat " + (cls||""); }
+
+  function serializePicks(){
+    const groups={}, wild={}, adv={};
+    document.querySelectorAll('.gcard').forEach(c=>{ groups[c.dataset.letter] = { g1:c.querySelector('.g1').value, g2:c.querySelector('.g2').value }; });
+    document.querySelectorAll('.wcrow').forEach(r=>{ wild[r.dataset.letter] = { team:r.querySelector('.third3').value, adv:r.querySelector('.adv').checked }; });
+    document.querySelectorAll('select.advslot').forEach(s=>{ adv[s.closest('.slotwrap').id] = s.value; });
+    const tg = document.getElementById('tiegoals');
+    return { groups, wild, adv, tiegoals: tg ? tg.value : "" };
+  }
+
+  function advRank(id){ return id.includes('16-s')?1 : id.includes('QF-s')?2 : id.includes('SF-s')?3 : id.includes('FIN-s')?4 : id.includes('CHAMP')?5 : 9; }
+
+  function restorePicks(data){
+    if(!data) return;
+    restoring = true;
+    try{
+      document.querySelectorAll('.gcard').forEach(c=>{
+        const g=(data.groups||{})[c.dataset.letter]||{};
+        c.querySelector('.g1').value=g.g1||''; c.querySelector('.g2').value=g.g2||'';
+        if(window.rebuildGroup) window.rebuildGroup(c);
+      });
+      if(window.populateBracket) window.populateBracket();
+      document.querySelectorAll('.wcrow').forEach(r=>{
+        const w=(data.wild||{})[r.dataset.letter]||{};
+        const sel=r.querySelector('.third3'); if(w.team) sel.value=w.team;
+        const cb=r.querySelector('.adv'); cb.checked=!!w.adv; r.classList.toggle('adv', !!w.adv);
+      });
+      if(window.populateBracket) window.populateBracket();
+      const slots=[...document.querySelectorAll('select.advslot')].map(s=>({s,id:s.closest('.slotwrap').id})).sort((a,b)=>advRank(a.id)-advRank(b.id));
+      let cur=0;
+      slots.forEach(o=>{
+        const r=advRank(o.id);
+        if(r!==cur){ if(window.refreshAdvanceOptions) window.refreshAdvanceOptions(); cur=r; }
+        const v=(data.adv||{})[o.id];
+        if(v){
+          if(![...o.s.options].some(op=>op.value===v)){ const op=document.createElement('option'); op.textContent=v; o.s.appendChild(op); }
+          o.s.value=v;
+        }
+      });
+      if(window.refreshAdvanceOptions) window.refreshAdvanceOptions();
+      const tg=document.getElementById('tiegoals'); if(tg) tg.value=(data.tiegoals||'');
+      if(window.markBlanks) window.markBlanks();
+    } finally {
+      restoring = false;
+    }
+  }
+
+  async function loadEntry(user){
+    setStatus("Loading your picks…","");
+    try{
+      const snap = await getDoc(doc(db, "entries", user.uid));
+      if(snap.exists() && snap.data().picks){ restorePicks(snap.data().picks); setStatus("Loaded ✓","ok"); }
+      else { setStatus("New entry — make your picks","" ); }
+    }catch(e){ setStatus("Couldn't load (working offline)","err"); console.error(e); }
+  }
+
+  async function saveEntry(){
+    if(!currentUser) return;
+    setStatus("Saving…","");
+    try{
+      const username = currentUser.email ? currentUser.email.split("@")[0] : "";
+      await setDoc(doc(db, "entries", currentUser.uid), {
+        uid: currentUser.uid,
+        username,
+        displayName: currentUser.displayName || username,
+        picks: serializePicks(),
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+      const t = new Date();
+      setStatus("Saved ✓ " + t.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), "ok");
+    }catch(e){ setStatus("Save failed — check connection","err"); console.error(e); }
+  }
+
+  function scheduleSave(){
+    if(!currentUser || restoring) return;
+    setStatus("Saving…","");
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveEntry, 800);
+  }
+  // any change to picks (groups, wildcards, bracket, tie-breaker) schedules a save
+  ["change","input"].forEach(ev=>{
+    document.getElementById("sheet2") && document.getElementById("sheet2").addEventListener(ev, scheduleSave);
+    document.getElementById("bracket") && document.getElementById("bracket").addEventListener(ev, scheduleSave);
+  });
+
+  onAuthStateChanged(auth, async (user) => {
     if(user){
+      currentUser = user;
       document.body.classList.remove("locked");
       const name = user.displayName || (user.email ? user.email.split("@")[0] : "Player");
       $("whoami").textContent = name;
       const pn = $("pname"); if(pn){ pn.value = name; if(window.syncPlayer) window.syncPlayer(); }
       $("auPass").value = "";
+      await loadEntry(user);
     } else {
+      currentUser = null;
       document.body.classList.add("locked");
       $("whoami").textContent = "—";
+      setStatus("","");
       setMode("login");
     }
   });
