@@ -175,6 +175,11 @@
   .authswitch { margin-top:16px; font-size:12.5px; color:#7a766a; text-align:center; }
   .remember { display:flex; align-items:center; gap:8px; font-size:12.5px; color:#57534a; margin-top:16px; text-transform:none; letter-spacing:0; font-weight:500; cursor:pointer; }
   .remember input { width:16px; height:16px; accent-color:#c75d4a; cursor:pointer; }
+  .pwwrap { position:relative; }
+  .pwwrap input { width:100%; padding-right:44px; }
+  .pwtoggle { position:absolute; right:6px; top:50%; transform:translateY(-50%); background:none; border:none; font-size:17px; line-height:1; cursor:pointer; opacity:.55; padding:6px; border-radius:6px; }
+  .pwtoggle:hover { opacity:.9; background:#f1eee4; }
+  .pwtoggle.on { opacity:1; }
   .authswitch a { color:#c75d4a; font-weight:700; text-decoration:none; margin-left:5px; }
   .authswitch a:hover { text-decoration:underline; }
   .authstatus { font-size:12px; color:#57534a; display:flex; align-items:center; gap:8px; }
@@ -193,22 +198,27 @@
     <h1>World Cup 2026 — Office Pool</h1>
     <div class="tag" id="authTag">Log in to make and save your picks.</div>
 
+    <form id="authForm" autocomplete="on">
     <div id="displayRow" style="display:none">
       <label for="auDisplay">Display name <span style="font-weight:400;text-transform:none;color:#a8a293">(shown on the leaderboard)</span></label>
-      <input id="auDisplay" type="text" placeholder="e.g. JohnDoe" autocomplete="name">
+      <input id="auDisplay" name="name" type="text" placeholder="e.g. JohnDoe" autocomplete="name">
     </div>
 
     <label for="auUser">Username</label>
-    <input id="auUser" type="text" placeholder="letters & numbers, no spaces" autocomplete="username">
+    <input id="auUser" name="username" type="text" placeholder="letters & numbers, no spaces" autocomplete="username">
 
     <label for="auPass">Password</label>
-    <input id="auPass" type="password" placeholder="at least 6 characters" autocomplete="current-password">
+    <div class="pwwrap">
+      <input id="auPass" name="password" type="password" placeholder="at least 6 characters" autocomplete="current-password">
+      <button type="button" id="pwToggle" class="pwtoggle" aria-label="Show password">👁</button>
+    </div>
 
     <label class="remember"><input type="checkbox" id="auRemember" checked> Remember me on this device</label>
 
     <div class="authbtns">
-      <button id="btnPrimary" type="button">Log in</button>
+      <button id="btnPrimary" type="submit">Log in</button>
     </div>
+    </form>
     <div id="authErr" class="autherr"></div>
     <div class="authswitch">
       <span id="switchPrompt">New here?</span>
@@ -845,9 +855,19 @@ populateBracket();
     }
   }
 
-  $("btnPrimary").addEventListener("click", ()=> mode === "signup" ? doSignup() : doLogin());
-  // Enter key submits the current mode
-  ["auUser","auPass","auDisplay"].forEach(id => $(id).addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); $("btnPrimary").click(); } }));
+  // Submitting the form (button or Enter) runs the current mode — and lets the
+  // browser offer to save / autofill the password.
+  $("authForm").addEventListener("submit", (e)=>{ e.preventDefault(); mode === "signup" ? doSignup() : doLogin(); });
+
+  // Show/hide password eye toggle
+  $("pwToggle").addEventListener("click", ()=>{
+    const p=$("auPass"), btn=$("pwToggle");
+    const show = p.type === "password";
+    p.type = show ? "text" : "password";
+    btn.classList.toggle("on", show);
+    btn.setAttribute("aria-label", show ? "Hide password" : "Show password");
+    p.focus();
+  });
 
   $("btnLogout").addEventListener("click", () => signOut(auth));
   const saveNowBtn = $("btnSaveNow");
