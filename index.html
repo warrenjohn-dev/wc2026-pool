@@ -147,9 +147,57 @@
   .foot { margin-top:10px; text-align:center; font-size:8.5px; color:#a8a293; }
 
   .capspan { display:inline-block; font-size:9.5px; color:#2b2b29; padding:1px 4px; text-align:center; overflow:hidden; }
+
+  /* ---- Auth gate ---- */
+  body.locked .toolbar, body.locked .wrap { display:none; }
+  #authgate { display:none; }
+  body.locked #authgate { display:flex; }
+  #authgate { position:fixed; inset:0; z-index:200; background:#f1eee5; align-items:center; justify-content:center; padding:20px; }
+  .authcard { width:100%; max-width:380px; background:#fff; border:1px solid #ddd9cd; border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,.10); padding:26px 24px; }
+  .authcard h1 { font-family:Georgia,'Times New Roman',serif; font-size:22px; color:#2b2b29; margin-bottom:4px; }
+  .authcard .tag { font-size:12.5px; color:#7a766a; margin-bottom:18px; }
+  .authcard label { display:block; font-size:11px; font-weight:700; color:#57534a; letter-spacing:.3px; text-transform:uppercase; margin:12px 0 4px; }
+  .authcard input { width:100%; padding:10px 12px; border:1px solid #d9d5c8; border-radius:7px; font-size:14px; background:#fdfcf7; color:#2b2b29; }
+  .authcard input:focus { outline:none; border-color:#c75d4a; }
+  .authbtns { display:flex; gap:10px; margin-top:18px; }
+  .authbtns button { flex:1; border:none; border-radius:7px; padding:11px; font-size:13.5px; font-weight:700; cursor:pointer; }
+  #btnLogin { background:#c75d4a; color:#fff; }
+  #btnLogin:hover { background:#b34f3d; }
+  #btnSignup { background:#fff; color:#2b2b29; border:1px solid #d9d5c8; }
+  #btnSignup:hover { background:#f6f4ec; }
+  .autherr { margin-top:14px; font-size:12px; color:#b3402e; background:#fbeae6; border:1px solid #f0c9c0; border-radius:7px; padding:9px 11px; display:none; }
+  .autherr.show { display:block; }
+  .authnote { margin-top:16px; font-size:11px; color:#a8a293; text-align:center; line-height:1.5; }
+  .authstatus { font-size:12px; color:#57534a; display:flex; align-items:center; gap:8px; }
+  .authstatus b { color:#2b2b29; }
+  .btn-logout { background:#efece3; color:#57534a; border:1px solid #d9d5c8; border-radius:6px; padding:8px 12px; font-size:12px; font-weight:700; cursor:pointer; }
 </style>
 </head>
-<body>
+<body class="locked">
+
+<!-- ===== Login / Sign-up gate ===== -->
+<div id="authgate">
+  <div class="authcard">
+    <h1>World Cup 2026 — Office Pool</h1>
+    <div class="tag">Sign in to make and save your picks.</div>
+
+    <label for="auDisplay">Display name <span style="font-weight:400;text-transform:none;color:#a8a293">(new accounts only)</span></label>
+    <input id="auDisplay" type="text" placeholder="e.g. Warren A." autocomplete="name">
+
+    <label for="auUser">Username</label>
+    <input id="auUser" type="text" placeholder="letters & numbers, no spaces" autocomplete="username">
+
+    <label for="auPass">Password</label>
+    <input id="auPass" type="password" placeholder="at least 6 characters" autocomplete="current-password">
+
+    <div class="authbtns">
+      <button id="btnSignup" type="button">Create account</button>
+      <button id="btnLogin" type="button">Log in</button>
+    </div>
+    <div id="authErr" class="autherr"></div>
+    <div class="authnote">New here? Fill in all three fields and tap <b>Create account</b>.<br>Returning? Username + password, then <b>Log in</b>.</div>
+  </div>
+</div>
 
 <div class="toolbar">
   <span class="ttl">&#9917; World Cup 2026 — Office Pool</span>
@@ -157,7 +205,9 @@
   <button class="btn-pdf" onclick="savePDF()">⬇ Save as PDF</button>
   <button class="btn-print" onclick="window.print()">🖨 Print</button>
   <button class="btn-clear" onclick="clearAll()">Clear</button>
-  <div class="hint">Pick your groups and the bracket fills its Round of 32 automatically. Then hit <b>Save as PDF</b>. For best results open this file in Chrome / Edge / Safari.</div>
+  <span class="authstatus">Signed in as <b id="whoami">—</b></span>
+  <button class="btn-logout" id="btnLogout" type="button">Log out</button>
+  <div class="hint">Make your picks below, then hit <b>Save as PDF</b> for a backup. Your picks will save to your account in the next update.</div>
 </div>
 
 <div class="wrap">
@@ -684,6 +734,77 @@ async function savePDF(){
 }
 
 populateBracket();
+</script>
+<!-- ===== Auth (username sign up / log in) ===== -->
+<script type="module">
+  import { auth, usernameToEmail } from "./firebase-init.js";
+  import {
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut,
+    updateProfile,
+    onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  const $ = id => document.getElementById(id);
+  const errBox = $("authErr");
+  function showErr(msg){ errBox.textContent = msg; errBox.classList.add("show"); }
+  function clearErr(){ errBox.textContent = ""; errBox.classList.remove("show"); }
+
+  function validUsername(u){ return /^[a-z0-9_]{3,20}$/i.test(u); }
+
+  $("btnSignup").addEventListener("click", async () => {
+    clearErr();
+    const display = $("auDisplay").value.trim();
+    const user = $("auUser").value.trim();
+    const pass = $("auPass").value;
+    if(!display) return showErr("Please enter a display name for the leaderboard.");
+    if(!validUsername(user)) return showErr("Username must be 3–20 letters, numbers, or underscores (no spaces).");
+    if(pass.length < 6) return showErr("Password must be at least 6 characters.");
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, usernameToEmail(user), pass);
+      await updateProfile(cred.user, { displayName: display });
+      // onAuthStateChanged will reveal the app
+    } catch(e){
+      if(e.code === "auth/email-already-in-use") showErr("That username is already taken — try logging in instead.");
+      else if(e.code === "auth/weak-password") showErr("Password is too weak (use 6+ characters).");
+      else showErr(humanize(e));
+    }
+  });
+
+  $("btnLogin").addEventListener("click", async () => {
+    clearErr();
+    const user = $("auUser").value.trim();
+    const pass = $("auPass").value;
+    if(!validUsername(user)) return showErr("Enter your username (letters & numbers).");
+    if(!pass) return showErr("Enter your password.");
+    try {
+      await signInWithEmailAndPassword(auth, usernameToEmail(user), pass);
+    } catch(e){
+      if(e.code === "auth/invalid-credential" || e.code === "auth/wrong-password" || e.code === "auth/user-not-found")
+        showErr("Username or password is incorrect. New here? Tap Create account.");
+      else showErr(humanize(e));
+    }
+  });
+
+  $("btnLogout").addEventListener("click", () => signOut(auth));
+
+  function humanize(e){ return (e && e.message ? e.message.replace("Firebase:", "").trim() : "Something went wrong."); }
+
+  onAuthStateChanged(auth, (user) => {
+    if(user){
+      document.body.classList.remove("locked");
+      const name = user.displayName || (user.email ? user.email.split("@")[0] : "Player");
+      $("whoami").textContent = name;
+      // prefill the PDF "Submitted by" name with their account name
+      const pn = $("pname"); if(pn){ pn.value = name; if(window.syncPlayer) window.syncPlayer(); }
+      // clear sensitive fields
+      $("auPass").value = "";
+    } else {
+      document.body.classList.add("locked");
+      $("whoami").textContent = "—";
+    }
+  });
 </script>
 </body>
 </html>
