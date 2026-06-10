@@ -32,9 +32,9 @@
   .savestat.ok { color:#444444; }
   .savestat.err { color:#b3402e; }
 
-  .wrap { overflow-x:auto; max-width:1200px; margin:0 auto; padding:22px 18px 60px; }
-  .sheet { background:#fff; margin:0 auto 22px; padding:26px 30px; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,.06); border:1px solid #e4e4e4; }
-  .sheet.portrait { width:100%; }
+  .wrap { overflow-x:auto; max-width:1280px; margin:0 auto; padding:22px 18px 60px; display:flex; flex-direction:column; align-items:safe center; }
+  .sheet { background:#fff; margin:0 0 22px; padding:26px 30px; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,.06); border:1px solid #e4e4e4; }
+  .sheet.portrait { width:100%; align-self:stretch; }
   .sheet.land { width:1240px; }
 
   .hd { background:linear-gradient(100deg,#161616,#6e6e6e); color:#fff; padding:14px 20px; border-radius:8px;
@@ -57,7 +57,7 @@
   .phead-sm .phead-body { padding:18px 24px; }
 
   /* ---- submit bar under the bracket ---- */
-  .submitbar { display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap;
+  .submitbar { display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap; align-self:stretch;
                background:#fff; border:1px solid #e4e4e4; border-radius:14px; padding:20px 26px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
   .submitbar-txt b { display:block; font-size:15px; color:#161616; margin-bottom:3px; }
   .submitbar-txt span { font-size:12.5px; color:#6e6e6e; }
