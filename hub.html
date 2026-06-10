@@ -77,6 +77,10 @@
   .notice b{ font-weight:700; }
   .notice button{ position:absolute; top:7px; right:12px; background:none; border:none; font-size:22px; line-height:1; color:#6e6e6e; cursor:pointer; padding:0 4px; }
   .notice button:hover{ color:#161616; }
+  table.audit{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  table.audit th, table.audit td{ border:1px solid #e2e2e2; padding:5px 7px; white-space:nowrap; }
+  table.audit th{ background:#f4f4f4; font-size:11px; text-transform:uppercase; letter-spacing:.3px; color:#6e6e6e; }
+  table.audit td.iss{ white-space:normal; font-size:12px; color:#b3402e; }
 </style>
 </head>
 <body>
@@ -148,6 +152,16 @@
         </div>
         <button id="admPublish" style="background:#161616;color:#fff;border:none;border-radius:8px;padding:12px 20px;font-weight:700;cursor:pointer">Publish standings</button>
         <span id="admStatus" style="font-size:14px;font-weight:700;color:#6e6e6e"></span>
+      </div>
+
+      <div style="margin-top:20px; padding-top:16px; border-top:1px solid #e2e2e2;">
+        <h3 style="margin:0 0 6px; font-family:'Outfit','Inter',sans-serif; font-size:18px; color:#161616;">Pick audit</h3>
+        <p style="font-size:14px; color:#6e6e6e; margin:0 0 10px">
+          Checks every participant for a <b>complete</b> entry — 12 groups, 8 wildcards, full knockout (R16→Final), Champion, 3rd-place bonus, tie-breaker — and flags any <b>inconsistent</b> bracket (e.g. a team advanced that isn't in the round below it). Reads everyone's saved picks.
+        </p>
+        <button id="admAudit" style="background:#fff;color:#161616;border:1.5px solid #161616;border-radius:8px;padding:10px 18px;font-weight:700;cursor:pointer">Run pick audit</button>
+        <span id="auditStatus" style="font-size:14px;font-weight:700;color:#6e6e6e;margin-left:10px"></span>
+        <div id="auditOut" style="margin-top:14px;"></div>
       </div>
     </div>
 
@@ -402,6 +416,76 @@
     try{ const r=await getDoc(doc(db,"meta","results")); if(r.exists()) existing=r.data(); }catch(e){ console.error(e); }
     buildAdminUI(existing);
     $("admPublish").addEventListener("click", publish);
+    $("admAudit").addEventListener("click", auditPicks);
+  }
+
+  const GROUP_LETTERS=["A","B","C","D","E","F","G","H","I","J","K","L"];
+  async function auditPicks(){
+    const st=$("auditStatus"); st.textContent="Loading…"; st.style.color="#6e6e6e";
+    try{
+      const [esnap,psnap]=await Promise.all([ getDocs(collection(db,"entries")), getDocs(collection(db,"players")) ]);
+      const players={}; psnap.forEach(s=>players[s.id]=s.data()||{});
+      const rows=[];
+      esnap.forEach(s=>{
+        const e=s.data()||{}; const p=e.picks||{};
+        const pl=players[s.id]||{};
+        const name=e.displayName||e.username||pl.displayName||pl.username||s.id;
+        const submitted=!!pl.submitted;
+        const g=p.groups||{}; let gOK=0; const gMiss=[];
+        GROUP_LETTERS.forEach(L=>{ const x=g[L]||{}; if(x.g1&&x.g2&&x.g1!==x.g2) gOK++; else gMiss.push(L); });
+        const wild=p.wild||{}; let wadv=0; Object.values(wild).forEach(x=>{ if(x&&x.adv&&x.team) wadv++; });
+        const adv=p.adv||{};
+        const cnt=f=>Object.keys(adv).filter(id=>id.includes(f)&&adv[id]).length;
+        const r16=cnt("16-"),qf=cnt("QF-"),sf=cnt("SF-"),fin=cnt("FIN-");
+        const champ=!!adv["bx-CHAMP"], third=!!p.third, tb=(p.tiegoals!==""&&p.tiegoals!=null);
+        const ds=deriveSets(p);
+        const issues=[];
+        if(gMiss.length) issues.push("groups incomplete: "+gMiss.join(","));
+        if(wadv!==8) issues.push("wildcards "+wadv+"/8");
+        if(r16!==16) issues.push("R16 "+r16+"/16");
+        if(qf!==8) issues.push("QF "+qf+"/8");
+        if(sf!==4) issues.push("SF "+sf+"/4");
+        if(fin!==2) issues.push("Final "+fin+"/2");
+        if(!champ) issues.push("no Champion");
+        if(!third) issues.push("no 3rd-place bonus");
+        if(!tb) issues.push("no tie-breaker");
+        // consistency: each round's teams must come from the round below
+        const miss=(set,sup)=>[...set].filter(t=>!sup.has(t));
+        let m;
+        if((m=miss(ds.r16,ds.r32)).length) issues.push("R16 not in R32: "+m.join(","));
+        if((m=miss(ds.qf,ds.r16)).length) issues.push("QF not in R16: "+m.join(","));
+        if((m=miss(ds.sf,ds.qf)).length) issues.push("SF not in QF: "+m.join(","));
+        if((m=miss(ds.fin,ds.sf)).length) issues.push("Final not in SF: "+m.join(","));
+        if(ds.champ && !ds.fin.has(ds.champ)) issues.push("Champion not a finalist");
+        if(ds.third){ if(!ds.sf.has(ds.third)) issues.push("3rd pick not a semifinalist"); else if(ds.fin.has(ds.third)) issues.push("3rd pick is a finalist"); }
+        rows.push({name,submitted,gOK,wadv,r16,qf,sf,fin,champ,third,tb,issues,complete:(issues.length===0&&submitted)});
+      });
+      rows.sort((a,b)=> (a.complete-b.complete) || (b.submitted-a.submitted) || String(a.name).localeCompare(String(b.name)) );
+      renderAudit(rows);
+      st.textContent=rows.length+" entr"+(rows.length===1?"y":"ies")+" checked";
+      st.style.color="#444444";
+    }catch(err){ console.error(err); st.textContent="Error: "+(err.message||err); st.style.color="#b3402e"; }
+  }
+  function renderAudit(rows){
+    if(!rows.length){ $("auditOut").innerHTML='<div style="color:#6e6e6e;font-size:14px">No entries found.</div>'; return; }
+    const ok=t=>t?'<span style="color:#2e7d32;font-weight:700">✓</span>':'<span style="color:#b3402e;font-weight:700">✗</span>';
+    const cell=(n,need)=>'<td style="text-align:center'+(n!==need?';color:#b3402e;font-weight:700':'')+'">'+n+'/'+need+'</td>';
+    const head=['','Participant','Sub','Groups','Wild','R16','QF','SF','Final','Champ','3rd','TB','Issues'];
+    let h='<div style="overflow:auto"><table class="audit"><thead><tr>'+head.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>';
+    rows.forEach(r=>{
+      h+='<tr'+(r.complete?'':' style="background:#fbeae6"')+'>'+
+        '<td style="text-align:center">'+(r.complete?'<span style="color:#2e7d32">●</span>':'<span style="color:#b3402e">●</span>')+'</td>'+
+        '<td>'+escapeHtml(r.name)+'</td>'+
+        '<td style="text-align:center">'+ok(r.submitted)+'</td>'+
+        cell(r.gOK,12)+cell(r.wadv,8)+cell(r.r16,16)+cell(r.qf,8)+cell(r.sf,4)+cell(r.fin,2)+
+        '<td style="text-align:center">'+ok(r.champ)+'</td><td style="text-align:center">'+ok(r.third)+'</td><td style="text-align:center">'+ok(r.tb)+'</td>'+
+        '<td class="iss">'+(r.issues.length?escapeHtml(r.issues.join(" · ")):'<span style="color:#2e7d32">none</span>')+'</td>'+
+      '</tr>';
+    });
+    h+='</tbody></table></div>';
+    const bad=rows.filter(r=>!r.complete).length;
+    h='<div style="font-size:14px;margin-bottom:8px"><b style="color:'+(bad?'#b3402e':'#2e7d32')+'">'+bad+'</b> of <b>'+rows.length+'</b> need attention'+(bad?' (highlighted below).':' — everyone is complete. ✓')+'</div>'+h;
+    $("auditOut").innerHTML=h;
   }
 </script>
 <script>
