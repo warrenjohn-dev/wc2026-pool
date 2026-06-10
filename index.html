@@ -1032,6 +1032,31 @@ populateBracket();
     }catch(e){ setStatus("Couldn't load (working offline)","err"); console.error(e); }
   }
 
+  /* Is this entry fully filled in and internally consistent? Returns {ok, missing[]}. */
+  function computeCompleteness(p){
+    const missing=[];
+    const g=p.groups||{}, wild=p.wild||{}, adv=p.adv||{};
+    const L=["A","B","C","D","E","F","G","H","I","J","K","L"];
+    const gm=[]; L.forEach(x=>{ const v=g[x]||{}; if(!(v.g1&&v.g2&&v.g1!==v.g2)) gm.push(x); });
+    if(gm.length) missing.push("group pick(s): "+gm.join(", "));
+    let wadv=0; Object.values(wild).forEach(x=>{ if(x&&x.adv&&x.team) wadv++; });
+    if(wadv!==8) missing.push("8 wildcard teams (you have "+wadv+")");
+    const cnt=f=>Object.keys(adv).filter(id=>id.includes(f)&&adv[id]).length;
+    if(cnt("16-")!==16) missing.push("Round of 16");
+    if(cnt("QF-")!==8) missing.push("Quarter-finals");
+    if(cnt("SF-")!==4) missing.push("Semi-finals");
+    if(cnt("FIN-")!==2) missing.push("Final");
+    if(!adv["bx-CHAMP"]) missing.push("Champion");
+    if(!p.third) missing.push("3rd-place bonus");
+    if(p.tiegoals===""||p.tiegoals==null) missing.push("tie-breaker goals");
+    const setOf=f=>new Set(Object.keys(adv).filter(id=>id.includes(f)&&adv[id]).map(id=>adv[id]));
+    const r32=new Set(); Object.values(g).forEach(x=>{ if(x.g1)r32.add(x.g1); if(x.g2)r32.add(x.g2); }); Object.values(wild).forEach(x=>{ if(x&&x.adv&&x.team)r32.add(x.team); });
+    const r16=setOf("16-"),qf=setOf("QF-"),sf=setOf("SF-"),fin=setOf("FIN-"),champ=adv["bx-CHAMP"]||"";
+    const out=(a,b)=>[...a].filter(t=>!b.has(t)).length;
+    if(out(r16,r32)||out(qf,r16)||out(sf,qf)||out(fin,sf)||(champ&&!fin.has(champ))||(p.third&&!sf.has(p.third))||(p.third&&fin.has(p.third))) missing.push("bracket consistency (a team is in a round it can't reach)");
+    return { ok: missing.length===0, missing };
+  }
+
   async function saveEntry(){
     if(!currentUser) return;
     if(deadlinePassed()){ setStatus("Picks are locked (deadline passed)","err"); return; }
@@ -1039,14 +1064,16 @@ populateBracket();
     try{
       const username = currentUser.email ? currentUser.email.split("@")[0] : "";
       const displayName = currentUser.displayName || username;
+      const picks = serializePicks();
+      const cc = computeCompleteness(picks);
       // 1) the private picks document
       await setDoc(doc(db, "entries", currentUser.uid), {
         uid: currentUser.uid, username, displayName,
-        picks: serializePicks(), updatedAt: serverTimestamp()
+        picks, updatedAt: serverTimestamp()
       }, { merge: true });
-      // 2) the public standings record (no points here — the Cloud Function writes those)
+      // 2) the public standings record (no points here — scoring writes those)
       await setDoc(doc(db, "players", currentUser.uid), {
-        uid: currentUser.uid, username, displayName, updatedAt: serverTimestamp()
+        uid: currentUser.uid, username, displayName, complete: cc.ok, updatedAt: serverTimestamp()
       }, { merge: true });
       const t = new Date();
       setStatus("Saved ✓ " + t.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), "ok");
@@ -1056,6 +1083,12 @@ populateBracket();
   async function submitPicks(){
     if(!currentUser) return;
     if(deadlinePassed()){ alert("The deadline has passed — picks are locked."); return; }
+    const cc = computeCompleteness(serializePicks());
+    if(!cc.ok){
+      const ok = confirm("Your bracket isn't finished yet. Still missing:\n\n• " + cc.missing.join("\n• ") +
+        "\n\nYou can submit now, but it'll show as \"Incomplete\" in the standings until you come back and finish. Submit anyway?");
+      if(!ok) return;
+    }
     clearTimeout(saveTimer);
     await saveEntry();
     try{

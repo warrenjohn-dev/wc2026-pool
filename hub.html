@@ -38,6 +38,8 @@
   .namebtn{ background:none; border:none; padding:0; font-size:15.5px; font-weight:700; color:var(--ink); cursor:pointer; text-align:left; }
   .namebtn:hover{ color:var(--clay); text-decoration:underline; }
   .badge{ font-size:11.5px; font-weight:800; padding:2px 7px; border-radius:20px; }
+  .badge.done{ background:#161616; color:#fff; }
+  .badge.bad{ background:#fbeae6; color:#b3402e; }
   .badge.in{ background:#eeeeee; color:#444444; }
   .badge.no{ background:#eeeeee; color:#9a9a9a; }
   .placeholder{ color:var(--taupe); font-size:14.5px; line-height:1.6; background:#fafafa; border:1px dashed var(--border); border-radius:9px; padding:14px; }
@@ -256,7 +258,9 @@
         const nameCell = canView
           ? `<button class="namebtn" data-uid="${r.uid}" data-name="${name.replace(/"/g,'&quot;')}">${escapeHtml(name)}</button>`
           : escapeHtml(name);
-        const status = r.submitted ? '<span class="badge in">Submitted</span>' : '<span class="badge no">In progress</span>';
+        const status = r.submitted
+          ? (r.complete===true ? '<span class="badge done">Completed</span>' : '<span class="badge bad">Incomplete</span>')
+          : '<span class="badge no">In progress</span>';
         tr.innerHTML = `<td class="rank">${i+1}</td><td>${nameCell}</td><td>${status}</td><td class="pts">${r.points||0}</td>`;
         body.appendChild(tr);
       });
@@ -524,13 +528,16 @@
     if(!rows.length){ $("auditOut").innerHTML='<div style="color:#6e6e6e;font-size:14px">No entries found.</div>'; return; }
     const ok=t=>t?'<span style="color:#2e7d32;font-weight:700">✓</span>':'<span style="color:#b3402e;font-weight:700">✗</span>';
     const cell=(n,need)=>'<td style="text-align:center'+(n!==need?';color:#b3402e;font-weight:700':'')+'">'+n+'/'+need+'</td>';
-    const head=['','Participant','Sub','Groups','Wild','R16','QF','SF','Final','Champ','3rd','TB','Issues'];
+    const head=['','Participant','Status','Groups','Wild','R16','QF','SF','Final','Champ','3rd','TB','Issues'];
     let h='<div style="overflow:auto"><table class="audit"><thead><tr>'+head.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>';
     rows.forEach(r=>{
+      const sLabel = r.submitted
+        ? (r.issues.length ? '<span style="color:#b3402e;font-weight:700">Incomplete</span>' : '<span style="font-weight:700">Completed</span>')
+        : '<span style="color:#9a9a9a">In progress</span>';
       h+='<tr'+(r.complete?'':' style="background:#fbeae6"')+'>'+
         '<td style="text-align:center">'+(r.complete?'<span style="color:#2e7d32">●</span>':'<span style="color:#b3402e">●</span>')+'</td>'+
         '<td>'+escapeHtml(r.name)+'</td>'+
-        '<td style="text-align:center">'+ok(r.submitted)+'</td>'+
+        '<td style="text-align:center">'+sLabel+'</td>'+
         cell(r.gOK,12)+cell(r.wadv,8)+cell(r.r16,16)+cell(r.qf,8)+cell(r.sf,4)+cell(r.fin,2)+
         '<td style="text-align:center">'+ok(r.champ)+'</td><td style="text-align:center">'+ok(r.third)+'</td><td style="text-align:center">'+ok(r.tb)+'</td>'+
         '<td class="iss">'+(r.issues.length?escapeHtml(r.issues.join(" · ")):'<span style="color:#2e7d32">none</span>')+'</td>'+
