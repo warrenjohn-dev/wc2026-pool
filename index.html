@@ -302,19 +302,19 @@
     </div>
 
     <div class="steps">
-      <div class="step"><span class="num">1</span><h4>Pick Top 2 per group</h4><p>On Page 2, choose who finishes 1st and 2nd in each of the 12 groups.</p></div>
+      <div class="step"><span class="num">1</span><h4>Pick Top 2 per group</h4><p>In the Group Stage section, choose who finishes 1st and 2nd in each of the 12 groups.</p></div>
       <div class="step"><span class="num">2</span><h4>Pick 8 best 3rd-place</h4><p>Choose which eight third-place finishers (of 12 possible) also reach the Round of 32.</p></div>
-      <div class="step"><span class="num">3</span><h4>Bracket auto-fills</h4><p>Page 3's Round of 32 fills in from your group picks. Just advance one winner per match to the Champion.</p></div>
-      <div class="step"><span class="num">4</span><h4>Save &amp; submit</h4><p>Add your Final goals tie-breaker, hit <b>Save as PDF</b>, and send it in before kickoff.</p></div>
+      <div class="step"><span class="num">3</span><h4>Fill the bracket</h4><p>The Round of 32 auto-fills from your picks. Advance one winner per match through to the Champion, then make your 3rd-place bonus pick.</p></div>
+      <div class="step"><span class="num">4</span><h4>Submit</h4><p>Add your Final-goals tie-breaker, then hit <b>Submit</b>. Your picks auto-save to your account — grab a <b>PDF</b> backup too. Get it in before kickoff.</p></div>
     </div>
 
     <div class="callout">
-      <b>Deadline:</b> sheets are due before the opening match (Mexico vs South Africa, June 11). &nbsp;<b>Tie-breaker:</b> predict the total goals scored in the Final — closest guess wins the pot (field is on Page 3). &nbsp;Third-place teams are ranked by points, then goal difference, then goals scored.
+      <b>Deadline:</b> picks are due before the opening match (Mexico vs South Africa, June 11). &nbsp;<b>Tie-breakers (in order):</b> total points, then correct Champion, then closest guess to total goals in the Final, then correct 3rd place. &nbsp;Third-place teams are ranked by points, then goal difference, then goals scored.
     </div>
 
     <h3 class="sech">The 12 groups</h3>
     <div class="refgrid" id="refgrid"></div>
-    <div class="foot">Page 1 of 3</div>
+    <div class="foot">Section 1 of 3 · How it works</div>
   </div>
 
   <!-- PAGE 2 -->
@@ -354,7 +354,7 @@
           <li><span>Reaches Semi-finals (×4)</span><span class="pts">+8 ea · 32 max pts</span></li>
           <li><span>Reaches the Final (×2)</span><span class="pts">+16 ea · 32 max pts</span></li>
           <li><span>Correct Champion (×1)</span><span class="pts">+50 · 50 max pts</span></li>
-          <li><span>Correct 3rd place — wins the M103 playoff (×1)</span><span class="pts">+5 · 5 max pts</span></li>
+          <li><span>Correct 3rd place <b>(bonus)</b> — wins the M103 playoff (×1)</span><span class="pts">+5 · 5 max pts</span></li>
           <li class="rmax"><span>Knockout max</span><span class="pts">183 pts</span></li>
         </ul>
         <div class="grandtotal">MAXIMUM POSSIBLE SCORE: 215 pts</div>
@@ -371,11 +371,11 @@
         <tr><td>Semi-finals</td><td>+8</td><td>4</td><td>32</td></tr>
         <tr><td>Final</td><td>+16</td><td>2</td><td>32</td></tr>
         <tr><td>Champion</td><td>+50</td><td>1</td><td>50</td></tr>
-        <tr><td>3rd place (M103 winner)</td><td>+5</td><td>1</td><td>5</td></tr>
+        <tr><td>3rd place bonus (M103 winner)</td><td>+5</td><td>1</td><td>5</td></tr>
         <tr class="ttl"><td>Total</td><td></td><td></td><td>215</td></tr>
       </tbody>
     </table>
-    <div class="foot">Page 2 of 3</div>
+    <div class="foot">Section 2 of 3 · Group &amp; wildcard picks</div>
   </div>
 
   <!-- PAGE 3 -->
@@ -384,7 +384,7 @@
       <h2>Knockout Bracket</h2>
       <p>Round of 32 → Champion. Each Round-of-32 slot is labeled with the group position that fills it.</p>
     </div>
-    <div class="autonote">The Round of 32 fills automatically from your Page-2 picks (shaded grey). Advance one winner per match by typing the team into the next slot — arrows show the path to the Champion.</div>
+    <div class="autonote">The Round of 32 fills automatically from your group-stage picks (shaded grey). Advance one winner per match by typing the team into the next slot — arrows show the path to the Champion.</div>
     <div class="legend">
       <b>How to read the slots:</b>
       <span><span class="lg g">Winner E</span> = your 1st-place team in that group</span>
@@ -393,7 +393,7 @@
       <span><span class="lg n">W M74</span> = winner of Match 74 — write in the team you're advancing</span>
     </div>
     <div class="bracket" id="bracket"></div>
-    <div class="foot">Match numbers &amp; host cities shown above each pairing · Final: July 19, MetLife Stadium, New Jersey</div>
+    <div class="foot">Section 3 of 3 · Knockout bracket &nbsp;·&nbsp; Match numbers &amp; host cities shown above each pairing · Final: July 19, MetLife Stadium, New Jersey</div>
   </div>
 
   <div class="submitbar">
@@ -609,7 +609,7 @@ const center=
       '<div class="seed feed" style="text-align:center">W M102 (SF2)</div><span class="slotwrap" id="bx-FIN-s1" data-src="bx-RSF"><select class="slot advslot"></select></span>'+
     '</div>'+
     '<div class="champ"><div class="cl">&#127942; CHAMPION</div><span class="slotwrap" id="bx-CHAMP" data-src="bx-FINALBOX"><select class="slot advslot"></select></span></div>'+
-    '<div class="thirdbox"><div class="tl">&#129353; 3RD PLACE · M103</div><span class="slotwrap" id="bx-THIRD"><select class="slot thirdpick"></select></span></div>'+
+    '<div class="thirdbox"><div class="tl">&#129353; 3RD-PLACE BONUS · +5</div><span class="slotwrap" id="bx-THIRD"><select class="slot thirdpick"></select></span></div>'+
     '<div class="tiebox"><label>TIE-BREAKER — total goals in the Final</label><input id="tiegoals" type="number" min="0" placeholder="0"></div>'+
   '</div>';
 document.getElementById('bracket').innerHTML='<div class="connlayer" id="connlayer"></div>'+buildHalf('L')+center+buildHalf('R');
