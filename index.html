@@ -6,7 +6,7 @@
 <title>World Cup 2026 — Office Pool</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
@@ -16,7 +16,7 @@
   /* ---- top nav ---- */
   .topnav { position:sticky; top:0; z-index:50; background:#f0f0f0; border-bottom:1px solid #dcdcdc; box-shadow:0 2px 8px rgba(0,0,0,.06); }
   .nav-in { max-width:1200px; margin:0 auto; padding:11px 18px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-  .brand { font-family:'Fredoka','Inter',system-ui,sans-serif; font-weight:700; font-size:16px; color:#161616; display:flex; align-items:center; gap:8px; }
+  .brand { font-family:'Outfit','Inter',system-ui,sans-serif; font-weight:700; font-size:16px; color:#161616; display:flex; align-items:center; gap:8px; }
   .navlink { color:#6e6e6e; text-decoration:none; font-weight:700; font-size:13px; padding:7px 11px; border-radius:7px; position:relative; }
   .navlink:hover { color:#161616; background:#ececec; }
   .navlink.active { color:#161616; }
@@ -35,11 +35,11 @@
   .wrap { overflow-x:auto; max-width:1200px; margin:0 auto; padding:22px 18px 60px; }
   .sheet { background:#fff; margin:0 auto 22px; padding:26px 30px; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,.06); border:1px solid #e4e4e4; }
   .sheet.portrait { width:100%; }
-  .sheet.land { width:1150px; }
+  .sheet.land { width:1240px; }
 
   .hd { background:linear-gradient(100deg,#161616,#6e6e6e); color:#fff; padding:14px 20px; border-radius:8px;
         display:flex; align-items:center; justify-content:space-between; }
-  .hd h1 { font-size:23px; letter-spacing:.3px; font-family:'Fredoka','Inter',system-ui,sans-serif; font-weight:700; }
+  .hd h1 { font-size:23px; letter-spacing:.3px; font-family:'Outfit','Inter',system-ui,sans-serif; font-weight:700; }
   .hd .sub { font-size:11px; opacity:.85; margin-top:3px; font-weight:400; }
   .hd .ball { font-size:30px; }
 
@@ -48,7 +48,7 @@
   .phead-accent { width:8px; background:linear-gradient(180deg,#161616,#333333); flex:none; }
   .phead-body { padding:24px 28px; }
   .phead-kicker { font-size:11px; font-weight:800; letter-spacing:2px; text-transform:uppercase; color:#161616; }
-  .phead-title { font-family:'Fredoka','Inter',system-ui,sans-serif; font-size:36px; line-height:1.05; color:#161616; margin:7px 0 0; font-weight:700; }
+  .phead-title { font-family:'Outfit','Inter',system-ui,sans-serif; font-size:36px; line-height:1.05; color:#161616; margin:7px 0 0; font-weight:700; }
   .phead-sub { font-size:13px; color:#6e6e6e; margin-top:9px; }
   .phead-chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
   .chip { font-size:12px; font-weight:700; color:#555555; background:#f0f0f0; border:1px solid #e2e2e2; border-radius:20px; padding:5px 13px; }
@@ -69,7 +69,7 @@
   .submitline b { color:#161616; }
   .submitline .echo { border-bottom:1px solid #d7d7d7; padding:0 8px; min-width:140px; display:inline-block; color:#161616; }
 
-  .sech { font-size:16px; color:#161616; margin:16px 0 8px; padding-bottom:5px; border-bottom:2px solid #161616; font-family:'Fredoka','Inter',sans-serif; font-weight:600; }
+  .sech { font-size:16px; color:#161616; margin:16px 0 8px; padding-bottom:5px; border-bottom:2px solid #161616; font-family:'Outfit','Inter',sans-serif; font-weight:600; }
   .intro { font-size:12px; line-height:1.55; color:#2b2b2b; }
   .intro p { margin-bottom:8px; }
   .steps { display:flex; gap:10px; margin:10px 0; flex-wrap:wrap; }
@@ -138,7 +138,7 @@
   .tiebreak { margin-top:8px; font-size:10px; background:#f5f5f5; border:1px solid #d7d7d7; border-radius:5px; padding:7px 9px; }
 
   .bracket-title { text-align:center; margin-bottom:6px; }
-  .bracket-title h2 { font-size:20px; color:#161616; font-family:'Fredoka','Inter',sans-serif; font-weight:700; }
+  .bracket-title h2 { font-size:20px; color:#161616; font-family:'Outfit','Inter',sans-serif; font-weight:700; }
   .bracket-title p { font-size:10px; color:#777777; }
   .autonote { text-align:center; font-size:10px; color:#6e6e6e; background:#eeeeee; border:1px solid #e2e2e2; border-radius:5px; padding:5px 8px; margin:0 auto 8px; max-width:620px; }
 
@@ -151,15 +151,15 @@
   .ar.d { border-left:4px solid transparent; border-right:4px solid transparent; border-top:6px solid #b5b5b5; }
   .col { display:flex; flex-direction:column; justify-content:space-around; flex:1; position:relative; z-index:1; }
   .col.center { flex:1.35; justify-content:center; }
-  .rndlabel { text-align:center; font-size:9px; font-weight:700; color:#6e6e6e; text-transform:uppercase; letter-spacing:.5px; margin-bottom:5px; }
+  .rndlabel { text-align:center; font-size:10.5px; font-weight:700; color:#6e6e6e; text-transform:uppercase; letter-spacing:.5px; margin-bottom:5px; }
   .matchwrap { display:flex; flex-direction:column; justify-content:center; flex:1; }
-  .mcap { font-size:7.5px; color:#9aa; font-weight:700; text-align:center; margin-bottom:2px; letter-spacing:.3px; }
-  .seed { font-size:7.5px; color:#6e6e6e; font-weight:700; margin:2px 0 1px; }
+  .mcap { font-size:8.5px; color:#999; font-weight:700; text-align:center; margin-bottom:2px; letter-spacing:.3px; }
+  .seed { font-size:9px; color:#6e6e6e; font-weight:700; margin:2px 0 1px; }
   .seed.thirdseed { color:#333333; }
   .seed.feed { color:#6e6e6e; }
   .boxref { display:block; }
-  .slot { width:100%; height:18px; border:1px solid #d7d7d7; border-radius:4px; background:#fff; font-size:9.5px; padding:1px 4px; color:#161616; }
-  .slot.r16 { background:#f7f7f7; height:19px; }
+  .slot { width:100%; height:23px; border:1px solid #d7d7d7; border-radius:4px; background:#fff; font-size:11px; padding:1px 5px; color:#161616; }
+  .slot.r16 { background:#f7f7f7; height:23px; }
   .slot.auto { background:#f0f0f0; border-color:#cccccc; font-weight:600; }
   .slot.blank, select.slot.blank { border-color:#d9534f !important; background:#fdecea !important; }
   #tiegoals.blank { border-color:#d9534f; background:#fdecea; }
@@ -169,16 +169,16 @@
   select.slot { -webkit-appearance:menulist; appearance:menulist; cursor:pointer; }
   .m32 { border:1px solid #ededed; border-radius:5px; padding:3px 4px; background:#fcfcfc; }
 
-  .finalbox { border:2px solid #333333; border-radius:8px; padding:9px; text-align:center; background:#f5f5f5; }
-  .finalbox .fl { font-size:10px; font-weight:700; color:#333333; text-transform:uppercase; letter-spacing:.5px; margin-bottom:7px; }
-  .finalbox .slot { border-color:#333333; background:#fff; height:24px; text-align:center; font-size:11px; }
-  .champ { margin-top:11px; border:2.5px solid #6e6e6e; border-radius:8px; padding:10px; text-align:center; background:linear-gradient(180deg,#6e6e6e,#161616); }
-  .champ .cl { font-size:11px; font-weight:800; letter-spacing:1px; color:#fff; }
-  .champ .slot { height:27px; background:#fff; margin-top:7px; text-align:center; font-weight:700; border-color:#161616; font-size:12px; }
-  .tiebox { margin-top:10px; border:1.5px dashed #333333; border-radius:7px; padding:8px 10px; text-align:center; }
-  .tiebox label { font-size:10px; font-weight:700; color:#333333; display:block; margin-bottom:5px; }
-  .tiebox input { width:70px; height:26px; text-align:center; font-size:14px; font-weight:700; border:1.5px solid #333333; border-radius:5px; }
-  .foot { margin-top:10px; text-align:center; font-size:8.5px; color:#9a9a9a; }
+  .finalbox { border:2px solid #333333; border-radius:8px; padding:10px; text-align:center; background:#f5f5f5; }
+  .finalbox .fl { font-size:11px; font-weight:700; color:#333333; text-transform:uppercase; letter-spacing:.5px; margin-bottom:7px; }
+  .finalbox .slot { border-color:#333333; background:#fff; height:30px; text-align:center; font-size:13px; }
+  .champ { margin-top:12px; border:2.5px solid #6e6e6e; border-radius:8px; padding:11px; text-align:center; background:linear-gradient(180deg,#6e6e6e,#161616); }
+  .champ .cl { font-size:12.5px; font-weight:800; letter-spacing:1px; color:#fff; }
+  .champ .slot { height:34px; background:#fff; margin-top:8px; text-align:center; font-weight:700; border-color:#161616; font-size:15px; }
+  .tiebox { margin-top:11px; border:1.5px dashed #333333; border-radius:7px; padding:9px 11px; text-align:center; }
+  .tiebox label { font-size:11px; font-weight:700; color:#333333; display:block; margin-bottom:5px; }
+  .tiebox input { width:74px; height:28px; text-align:center; font-size:15px; font-weight:700; border:1.5px solid #333333; border-radius:5px; }
+  .foot { margin-top:10px; text-align:center; font-size:9px; color:#9a9a9a; }
 
   .capspan { display:inline-block; font-size:9.5px; color:#161616; padding:1px 4px; text-align:center; overflow:hidden; }
 
@@ -188,7 +188,7 @@
   body.locked #authgate { display:flex; }
   #authgate { position:fixed; inset:0; z-index:200; background:#f4f4f4; align-items:center; justify-content:center; padding:20px; }
   .authcard { width:100%; max-width:460px; background:#fff; border:1px solid #dcdcdc; border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,.10); padding:34px 36px; }
-  .authcard h1 { font-family:'Fredoka','Inter',system-ui,sans-serif; font-size:24px; line-height:1.2; color:#161616; margin-bottom:6px; }
+  .authcard h1 { font-family:'Outfit','Inter',system-ui,sans-serif; font-size:24px; line-height:1.2; color:#161616; margin-bottom:6px; }
   .authcard .tag { font-size:13px; color:#777777; margin-bottom:20px; }
   .authcard label { display:block; font-size:11px; font-weight:700; color:#555555; letter-spacing:.3px; text-transform:uppercase; margin:16px 0 5px; }
   .authcard input { width:100%; padding:12px 14px; border:1px solid #d7d7d7; border-radius:8px; font-size:14px; background:#fcfcfc; color:#161616; }
@@ -257,7 +257,7 @@
 
 <nav class="topnav">
   <div class="nav-in">
-    <span class="brand">FIFA World Cup 2026 Pool</span>
+    <span class="brand">FIFA World Cup 2026</span>
     <a class="navlink active" href="index.html?edit=1">My Picks</a>
     <a class="navlink" href="hub.html">Main Hub</a>
     <span class="navspace"></span>
@@ -599,7 +599,7 @@ const center=
       '<div class="seed feed" style="text-align:center">W M101 (SF1)</div><span class="slotwrap" id="bx-FIN-s0" data-src="bx-LSF"><select class="slot advslot"></select></span>'+
       '<div class="seed feed" style="text-align:center">W M102 (SF2)</div><span class="slotwrap" id="bx-FIN-s1" data-src="bx-RSF"><select class="slot advslot"></select></span>'+
     '</div>'+
-    '<div class="champ"><div class="cl">&#333333; CHAMPION</div><span class="slotwrap" id="bx-CHAMP" data-src="bx-FINALBOX"><select class="slot advslot"></select></span></div>'+
+    '<div class="champ"><div class="cl">&#127942; CHAMPION</div><span class="slotwrap" id="bx-CHAMP" data-src="bx-FINALBOX"><select class="slot advslot"></select></span></div>'+
     '<div class="tiebox"><label>TIE-BREAKER — total goals in the Final</label><input id="tiegoals" type="number" min="0" placeholder="0"></div>'+
   '</div>';
 document.getElementById('bracket').innerHTML='<div class="connlayer" id="connlayer"></div>'+buildHalf('L')+center+buildHalf('R');
