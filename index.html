@@ -726,7 +726,6 @@ requestAnimationFrame(()=>requestAnimationFrame(drawConnectors));
 
 /* ---------- Controls ---------- */
 function clearAll(){
-  if(!confirm('Clear all picks?')) return;
   document.querySelectorAll('.gcard').forEach(c=>{ c.querySelector('.g1').value=''; c.querySelector('.g2').value=''; rebuildGroup(c); });
   document.querySelectorAll('.third3').forEach(s=>s.value='');
   document.querySelectorAll('.adv').forEach(cb=>{ cb.checked=false; cb.closest('.wcrow').classList.remove('adv'); });
@@ -1043,11 +1042,24 @@ populateBracket();
     if(deadlinePassed()) return;
     if(!confirm("Clear all your picks?\n\nThis empties your whole bracket and moves you back to \u201CIn progress\u201D in the standings until you submit again.")) return;
     if(window.clearAll) window.clearAll();
+    clearTimeout(saveTimer);
     if(currentUser){
-      try{ await setDoc(doc(db, "players", currentUser.uid), { submitted:false, updatedAt: serverTimestamp() }, { merge:true }); }
-      catch(e){ console.error(e); }
+      const username = currentUser.email ? currentUser.email.split("@")[0] : "";
+      const displayName = currentUser.displayName || username;
+      setStatus("Clearing…","");
+      try{
+        // persist the now-empty bracket
+        await setDoc(doc(db, "entries", currentUser.uid), {
+          uid: currentUser.uid, username, displayName,
+          picks: serializePicks(), updatedAt: serverTimestamp()
+        }, { merge:true });
+        // reset standings status to "In progress"
+        await setDoc(doc(db, "players", currentUser.uid), {
+          uid: currentUser.uid, username, displayName, submitted:false, updatedAt: serverTimestamp()
+        }, { merge:true });
+        setStatus("Cleared — back to In progress","ok");
+      }catch(e){ console.error(e); setStatus("Server update failed — check rules/connection","err"); }
     }
-    setStatus("Picks cleared","");
   });
 
   onAuthStateChanged(auth, async (user) => {
