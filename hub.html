@@ -129,6 +129,10 @@
           <select id="admChamp" style="padding:9px;border:1px solid #d7d7d7;border-radius:7px;min-width:180px"></select>
         </div>
         <div>
+          <label style="display:block;font-size:12.5px;font-weight:700;color:#6e6e6e;text-transform:uppercase">3rd place (M103 winner)</label>
+          <select id="admThird" style="padding:9px;border:1px solid #d7d7d7;border-radius:7px;min-width:180px"></select>
+        </div>
+        <div>
           <label style="display:block;font-size:12.5px;font-weight:700;color:#6e6e6e;text-transform:uppercase">Final — total goals</label>
           <input id="admGoals" type="number" min="0" style="padding:9px;border:1px solid #d7d7d7;border-radius:7px;width:120px" placeholder="e.g. 3">
         </div>
@@ -188,7 +192,13 @@
     onSnapshot(collection(db, "players"), (snap)=>{
       const rows = [];
       snap.forEach(d=> rows.push(d.data()));
-      rows.sort((a,b)=> (b.points||0)-(a.points||0) || String(a.displayName||a.username).localeCompare(String(b.displayName||b.username)) );
+      rows.sort((a,b)=>
+        (b.points||0)-(a.points||0)
+        || (b.tbChamp||0)-(a.tbChamp||0)
+        || (a.tbGoals==null?999:a.tbGoals)-(b.tbGoals==null?999:b.tbGoals)
+        || (b.tbThird||0)-(a.tbThird||0)
+        || String(a.displayName||a.username).localeCompare(String(b.displayName||b.username))
+      );
       const body = $("standingsBody");
       if(rows.length===0){ body.innerHTML = '<tr><td colspan="4" class="empty">No entries yet — be the first to submit!</td></tr>'; return; }
       body.innerHTML = "";
@@ -227,6 +237,7 @@
     const fin = [adv["bx-FIN-s0"], adv["bx-FIN-s1"]].filter(Boolean);
     let html = `<div class="champrow"><div class="lbl">🏆 Predicted Champion</div><div class="val">${escapeHtml(champ)}</div></div>`;
     if(fin.length) html += `<div class="pk"><span class="k">Finalists</span><span>${fin.map(escapeHtml).join("  vs  ")}</span></div>`;
+    if(p.third) html += `<div class="pk"><span class="k">3rd place pick</span><span>${escapeHtml(p.third)}</span></div>`;
     if(p.tiegoals) html += `<div class="pk"><span class="k">Tie-breaker (goals in Final)</span><span>${escapeHtml(p.tiegoals)}</span></div>`;
 
     html += `<div class="seclbl">Group winners & runners-up</div>`;
@@ -286,6 +297,10 @@
     const finalists=[...(sel.fin||[])].sort();
     const cur=$("admChamp").value;
     $("admChamp").innerHTML = '<option value="">—</option>'+finalists.map(t=>'<option '+(t===cur?"selected":"")+'>'+escapeHtml(t)+'</option>').join("");
+    // 3rd place is contested by the two SF losers (SF teams who are not finalists)
+    const losers=[...(sel.sf||[])].filter(t=>!(sel.fin||new Set()).has(t)).sort();
+    const curT=$("admThird").value;
+    $("admThird").innerHTML = '<option value="">—</option>'+losers.map(t=>'<option '+(t===curT?"selected":"")+'>'+escapeHtml(t)+'</option>').join("");
   }
   function buildAdminUI(existing){
     sel.r32=new Set(existing.r32||[]); sel.r16=new Set(existing.r16||[]); sel.qf=new Set(existing.qf||[]); sel.sf=new Set(existing.sf||[]); sel.fin=new Set(existing.fin||[]);
@@ -295,7 +310,7 @@
     updateCounts();
     renderChampOptions();
     $("admGoals").value = existing.finalGoals!=null ? existing.finalGoals : "";
-    setTimeout(()=>{ $("admChamp").value = existing.champ||""; },0);
+    setTimeout(()=>{ $("admChamp").value = existing.champ||""; $("admThird").value = existing.third||""; },0);
     host.addEventListener("click", (e)=>{
       const btn=e.target.closest(".rndclear"); if(!btn) return;
       const rk=btn.dataset.r;
@@ -340,22 +355,32 @@
     const g=p.groups||{},wild=p.wild||{},adv=p.adv||{};
     const r32=new Set(); Object.values(g).forEach(x=>{if(x.g1)r32.add(x.g1);if(x.g2)r32.add(x.g2);}); Object.values(wild).forEach(x=>{if(x&&x.adv&&x.team)r32.add(x.team);});
     const pick=f=>new Set(Object.keys(adv).filter(id=>id.includes(f)).map(id=>adv[id]).filter(Boolean));
-    return {r32,r16:pick("16-"),qf:pick("QF-"),sf:pick("SF-"),fin:pick("FIN-"),champ:adv["bx-CHAMP"]||""};
+    return {r32,r16:pick("16-"),qf:pick("QF-"),sf:pick("SF-"),fin:pick("FIN-"),champ:adv["bx-CHAMP"]||"",third:p.third||""};
   }
   function scoreEntry(picks, actual){
     const s=deriveSets(picks); const inter=(A,B)=>[...A].filter(x=>B.has(x)).length;
-    const b={r32:inter(s.r32,actual.r32),r16:inter(s.r16,actual.r16)*2,qf:inter(s.qf,actual.qf)*4,sf:inter(s.sf,actual.sf)*8,fin:inter(s.fin,actual.fin)*16,champ:(s.champ&&s.champ===actual.champ)?50:0};
-    b.total=b.r32+b.r16+b.qf+b.sf+b.fin+b.champ; return b;
+    const b={r32:inter(s.r32,actual.r32),r16:inter(s.r16,actual.r16)*2,qf:inter(s.qf,actual.qf)*4,sf:inter(s.sf,actual.sf)*8,fin:inter(s.fin,actual.fin)*16,champ:(s.champ&&s.champ===actual.champ)?50:0,third:(s.third&&actual.third&&s.third===actual.third)?5:0};
+    b.total=b.r32+b.r16+b.qf+b.sf+b.fin+b.champ+b.third; return b;
   }
   async function publish(){
     const st=$("admStatus"); st.textContent="Publishing…"; st.style.color="#6e6e6e";
-    const actual = { r32:[...sel.r32], r16:[...sel.r16], qf:[...sel.qf], sf:[...sel.sf], fin:[...sel.fin], champ:$("admChamp").value||"", finalGoals: $("admGoals").value!=="" ? Number($("admGoals").value) : null };
+    const actual = { r32:[...sel.r32], r16:[...sel.r16], qf:[...sel.qf], sf:[...sel.sf], fin:[...sel.fin], champ:$("admChamp").value||"", third:$("admThird").value||"", finalGoals: $("admGoals").value!=="" ? Number($("admGoals").value) : null };
     try{
       await setDoc(doc(db,"meta","results"), {...actual, updatedAt:serverTimestamp()}, {merge:true});
-      const actualSets={ r32:new Set(actual.r32), r16:new Set(actual.r16), qf:new Set(actual.qf), sf:new Set(actual.sf), fin:new Set(actual.fin), champ:actual.champ };
+      const actualSets={ r32:new Set(actual.r32), r16:new Set(actual.r16), qf:new Set(actual.qf), sf:new Set(actual.sf), fin:new Set(actual.fin), champ:actual.champ, third:actual.third };
       const entries = await getDocs(collection(db,"entries"));
       const batch = writeBatch(db); let n=0;
-      entries.forEach(snap=>{ const e=snap.data(); if(!e||!e.picks) return; const b=scoreEntry(e.picks, actualSets); batch.set(doc(db,"players",snap.id), {points:b.total, breakdown:b, scoredAt:serverTimestamp()}, {merge:true}); n++; });
+      entries.forEach(snap=>{
+        const e=snap.data(); if(!e||!e.picks) return;
+        const b=scoreEntry(e.picks, actualSets);
+        // tie-break fields: 1) correct champion, 2) closest final goals, 3) correct 3rd
+        const ds=deriveSets(e.picks);
+        const tbChamp=(ds.champ && ds.champ===actual.champ)?1:0;
+        const g=e.picks.tiegoals;
+        const tbGoals=(g!=="" && g!=null && actual.finalGoals!=null) ? Math.abs(Number(g)-actual.finalGoals) : 999;
+        const tbThird=(ds.third && actual.third && ds.third===actual.third)?1:0;
+        batch.set(doc(db,"players",snap.id), {points:b.total, breakdown:b, tbChamp, tbGoals, tbThird, scoredAt:serverTimestamp()}, {merge:true}); n++;
+      });
       await batch.commit();
       st.textContent="Published ✓ scored "+n+" players"; st.style.color="#444444";
     }catch(err){ console.error(err); st.textContent="Error: "+(err.message||err); st.style.color="#b3402e"; }

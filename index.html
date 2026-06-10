@@ -177,6 +177,9 @@
   .champ { margin-top:12px; border:2.5px solid #6e6e6e; border-radius:8px; padding:11px; text-align:center; background:linear-gradient(180deg,#6e6e6e,#161616); }
   .champ .cl { font-size:14px; font-weight:800; letter-spacing:1px; color:#fff; }
   .champ .slot { height:34px; background:#fff; margin-top:8px; text-align:center; font-weight:700; border-color:#161616; font-size:17px; }
+  .thirdbox { margin-top:10px; border:1.5px solid #9a9a9a; border-radius:8px; padding:9px; text-align:center; background:#fafafa; }
+  .thirdbox .tl { font-size:11px; font-weight:800; letter-spacing:.5px; color:#555555; text-transform:uppercase; margin-bottom:6px; }
+  .thirdbox .slot { height:30px; text-align:center; font-weight:700; font-size:13.5px; }
   .tiebox { margin-top:11px; border:1.5px dashed #333333; border-radius:7px; padding:9px 11px; text-align:center; }
   .tiebox label { font-size:12.5px; font-weight:700; color:#333333; display:block; margin-bottom:5px; }
   .tiebox input { width:74px; height:28px; text-align:center; font-size:17px; font-weight:700; border:1.5px solid #333333; border-radius:5px; }
@@ -351,10 +354,11 @@
           <li><span>Reaches Semi-finals (×4)</span><span class="pts">+8 ea · 32 max pts</span></li>
           <li><span>Reaches the Final (×2)</span><span class="pts">+16 ea · 32 max pts</span></li>
           <li><span>Correct Champion (×1)</span><span class="pts">+50 · 50 max pts</span></li>
-          <li class="rmax"><span>Knockout max</span><span class="pts">178 pts</span></li>
+          <li><span>Correct 3rd place — wins the M103 playoff (×1)</span><span class="pts">+5 · 5 max pts</span></li>
+          <li class="rmax"><span>Knockout max</span><span class="pts">183 pts</span></li>
         </ul>
-        <div class="grandtotal">MAXIMUM POSSIBLE SCORE: 210 pts</div>
-        <div class="tiebreak"><b>Tie-breaker:</b> predict total goals scored in the Final — closest guess wins the pot (enter it on Page 3).</div>
+        <div class="grandtotal">MAXIMUM POSSIBLE SCORE: 215 pts</div>
+        <div class="tiebreak"><b>Tie-breakers (in order):</b> 1) total points, 2) you picked the correct Champion, 3) closest guess to total goals in the Final, 4) you picked the correct 3rd place.</div>
       </div>
     </div>
 
@@ -367,7 +371,8 @@
         <tr><td>Semi-finals</td><td>+8</td><td>4</td><td>32</td></tr>
         <tr><td>Final</td><td>+16</td><td>2</td><td>32</td></tr>
         <tr><td>Champion</td><td>+50</td><td>1</td><td>50</td></tr>
-        <tr class="ttl"><td>Total</td><td></td><td></td><td>210</td></tr>
+        <tr><td>3rd place (M103 winner)</td><td>+5</td><td>1</td><td>5</td></tr>
+        <tr class="ttl"><td>Total</td><td></td><td></td><td>215</td></tr>
       </tbody>
     </table>
     <div class="foot">Page 2 of 3</div>
@@ -604,6 +609,7 @@ const center=
       '<div class="seed feed" style="text-align:center">W M102 (SF2)</div><span class="slotwrap" id="bx-FIN-s1" data-src="bx-RSF"><select class="slot advslot"></select></span>'+
     '</div>'+
     '<div class="champ"><div class="cl">&#127942; CHAMPION</div><span class="slotwrap" id="bx-CHAMP" data-src="bx-FINALBOX"><select class="slot advslot"></select></span></div>'+
+    '<div class="thirdbox"><div class="tl">&#129353; 3RD PLACE · M103</div><span class="slotwrap" id="bx-THIRD"><select class="slot thirdpick"></select></span></div>'+
     '<div class="tiebox"><label>TIE-BREAKER — total goals in the Final</label><input id="tiegoals" type="number" min="0" placeholder="0"></div>'+
   '</div>';
 document.getElementById('bracket').innerHTML='<div class="connlayer" id="connlayer"></div>'+buildHalf('L')+center+buildHalf('R');
@@ -626,6 +632,7 @@ function populateBracket(){
   updateWildcardCount();
   autoThirds();
   refreshAdvanceOptions();
+  refreshThirdPick();
   markBlanks();
 }
 /* Each knockout dropdown shows ONLY the two teams in that match —
@@ -647,7 +654,26 @@ function refreshAdvanceOptions(){
     });
   }
 }
-function updateAfterAdvance(){ refreshAdvanceOptions(); markBlanks(); }
+function updateAfterAdvance(){ refreshAdvanceOptions(); refreshThirdPick(); markBlanks(); }
+/* The 3rd-place pick offers the two SEMIFINAL LOSERS (your SF teams who didn't
+   reach the Final). Recomputed whenever SF/Final picks change. */
+function sfLoser(sfBoxId, finSlotId){
+  const sfTeams=getCandidates(sfBoxId);                 // two teams in that semifinal
+  const finalist=(document.querySelector('#'+finSlotId+' select')||{}).value||'';
+  const losers=sfTeams.filter(t=>t && t!==finalist);
+  // if the finalist isn't decided yet, there's no single loser to offer
+  return (finalist && losers.length===1) ? losers[0] : '';
+}
+function refreshThirdPick(){
+  const sel=document.querySelector('#bx-THIRD select'); if(!sel) return;
+  const lLoser=sfLoser('bx-LSF','bx-FIN-s0');
+  const rLoser=sfLoser('bx-RSF','bx-FIN-s1');
+  const cands=[lLoser,rLoser].filter(Boolean);
+  const cur=sel.value;
+  const keep=(cur && cands.includes(cur)) ? cur : '';
+  sel.innerHTML='<option value=""></option>'+cands.map(t=>'<option '+(t===keep?'selected':'')+'>'+t+'</option>').join('');
+  sel.value=keep;
+}
 /* Empty slot (R32 → Champion) and the tie-breaker show red until filled */
 function markBlanks(){
   document.querySelectorAll('#bracket input.slot, #bracket select.slot').forEach(el=>{ el.classList.toggle('blank', !el.value); });
@@ -935,7 +961,8 @@ populateBracket();
     document.querySelectorAll('.wcrow').forEach(r=>{ wild[r.dataset.letter] = { team:r.querySelector('.third3').value, adv:r.querySelector('.adv').checked }; });
     document.querySelectorAll('select.advslot').forEach(s=>{ adv[s.closest('.slotwrap').id] = s.value; });
     const tg = document.getElementById('tiegoals');
-    return { groups, wild, adv, tiegoals: tg ? tg.value : "" };
+    const third3 = document.querySelector('#bx-THIRD select');
+    return { groups, wild, adv, third: third3 ? third3.value : "", tiegoals: tg ? tg.value : "" };
   }
 
   function advRank(id){ return id.includes('CHAMP')?5 : id.includes('FIN-')?4 : id.includes('SF-')?3 : id.includes('QF-')?2 : id.includes('16-')?1 : 9; }
@@ -968,6 +995,12 @@ populateBracket();
         }
       });
       if(window.refreshAdvanceOptions) window.refreshAdvanceOptions();
+      if(window.refreshThirdPick) window.refreshThirdPick();
+      const third3 = document.querySelector('#bx-THIRD select');
+      if(third3 && data.third){
+        if(![...third3.options].some(op=>op.value===data.third)){ const op=document.createElement('option'); op.textContent=data.third; third3.appendChild(op); }
+        third3.value=data.third;
+      }
       const tg=document.getElementById('tiegoals'); if(tg) tg.value=(data.tiegoals||'');
       if(window.markBlanks) window.markBlanks();
     } finally {
