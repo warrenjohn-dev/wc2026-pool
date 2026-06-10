@@ -177,7 +177,7 @@
   .champ { margin-top:12px; border:2.5px solid #6e6e6e; border-radius:8px; padding:11px; text-align:center; background:linear-gradient(180deg,#6e6e6e,#161616); }
   .champ .cl { font-size:14px; font-weight:800; letter-spacing:1px; color:#fff; }
   .champ .slot { height:34px; background:#fff; margin-top:8px; text-align:center; font-weight:700; border-color:#161616; font-size:17px; }
-  .thirdbox { margin-top:10px; border:1.5px solid #9a9a9a; border-radius:8px; padding:9px; text-align:center; background:#fafafa; }
+  .thirdbox { margin-top:34px; border:1.5px solid #9a9a9a; border-radius:8px; padding:9px; text-align:center; background:#fafafa; }
   .thirdbox .tl { font-size:11px; font-weight:800; letter-spacing:.5px; color:#555555; text-transform:uppercase; margin-bottom:6px; }
   .thirdbox .slot { height:30px; text-align:center; font-weight:700; font-size:13.5px; }
   .tiebox { margin-top:11px; border:1.5px dashed #333333; border-radius:7px; padding:9px 11px; text-align:center; }
@@ -221,6 +221,12 @@
   .savestat { font-size:13px; font-weight:700; color:#9a9a9a; }
   .savestat.ok { color:#444444; }
   .savestat.err { color:#b3402e; }
+  .notice{ display:flex; align-items:flex-start; gap:12px; background:#f4f4f4; border-bottom:1px solid #d7d7d7; border-left:4px solid #161616; color:#161616; font-size:13.5px; line-height:1.5; padding:11px 16px; }
+  .notice-txt{ flex:1; }
+  .notice b{ font-weight:700; }
+  .notice button{ background:none; border:none; font-size:21px; line-height:1; color:#6e6e6e; cursor:pointer; padding:0 4px; }
+  .notice button:hover{ color:#161616; }
+  body.locked #poolNotice{ display:none; }
 </style>
 </head>
 <body class="locked">
@@ -274,6 +280,11 @@
   </div>
   <input type="hidden" id="pname">
 </nav>
+
+<div class="notice" id="poolNotice">
+  <div class="notice-txt">&#9888;&#65039; <b>Heads up:</b> we added a new <b>3rd-place bonus (+5)</b> and corrected the Round-of-32 third-place matchups. Please reopen and <b>re-check your knockout picks</b> before the deadline.</div>
+  <button type="button" id="noticeClose" aria-label="Dismiss notice">&times;</button>
+</div>
 
 <div class="wrap">
 
@@ -371,7 +382,7 @@
         <tr><td>Semi-finals</td><td>+8</td><td>4</td><td>32</td></tr>
         <tr><td>Final</td><td>+16</td><td>2</td><td>32</td></tr>
         <tr><td>Champion</td><td>+50</td><td>1</td><td>50</td></tr>
-        <tr><td>3rd place bonus (M103 winner)</td><td>+5</td><td>1</td><td>5</td></tr>
+        <tr><td>3rd place bonus</td><td>+5</td><td>1</td><td>5</td></tr>
         <tr class="ttl"><td>Total</td><td></td><td></td><td>215</td></tr>
       </tbody>
     </table>
@@ -609,7 +620,7 @@ const center=
       '<div class="seed feed" style="text-align:center">W M102 (SF2)</div><span class="slotwrap" id="bx-FIN-s1" data-src="bx-RSF"><select class="slot advslot"></select></span>'+
     '</div>'+
     '<div class="champ"><div class="cl">&#127942; CHAMPION</div><span class="slotwrap" id="bx-CHAMP" data-src="bx-FINALBOX"><select class="slot advslot"></select></span></div>'+
-    '<div class="thirdbox"><div class="tl">&#129353; 3RD-PLACE BONUS · +5</div><span class="slotwrap" id="bx-THIRD"><select class="slot thirdpick"></select></span></div>'+
+    '<div class="thirdbox"><div class="tl">&#129353; 3RD-PLACE BONUS</div><span class="slotwrap" id="bx-THIRD"><select class="slot thirdpick"></select></span></div>'+
     '<div class="tiebox"><label>TIE-BREAKER — total goals in the Final</label><input id="tiegoals" type="number" min="0" placeholder="0"></div>'+
   '</div>';
 document.getElementById('bracket').innerHTML='<div class="connlayer" id="connlayer"></div>'+buildHalf('L')+center+buildHalf('R');
@@ -1124,6 +1135,14 @@ populateBracket();
       setMode("login");
     }
   });
+</script>
+<script>
+(function(){
+  var n=document.getElementById('poolNotice'); if(!n) return;
+  try{ if(localStorage.getItem('wc2026_notice_3rdplace')==='dismissed') n.style.display='none'; }catch(e){}
+  var b=document.getElementById('noticeClose');
+  if(b) b.addEventListener('click', function(){ n.style.display='none'; try{ localStorage.setItem('wc2026_notice_3rdplace','dismissed'); }catch(e){} });
+})();
 </script>
 </body>
 </html>

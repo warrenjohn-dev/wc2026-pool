@@ -72,6 +72,11 @@
   .srow{ padding:8px 0; border-bottom:1px solid #efefef; }
   .srow:last-child{ border-bottom:none; }
   .schhdr{ font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:#6e6e6e; font-weight:800; margin-bottom:4px; }
+  .notice{ display:flex; align-items:flex-start; gap:12px; background:#f4f4f4; border-bottom:1px solid #d7d7d7; border-left:4px solid #161616; color:#161616; font-size:13.5px; line-height:1.5; padding:11px 16px; }
+  .notice-txt{ flex:1; }
+  .notice b{ font-weight:700; }
+  .notice button{ background:none; border:none; font-size:21px; line-height:1; color:#6e6e6e; cursor:pointer; padding:0 4px; }
+  .notice button:hover{ color:#161616; }
 </style>
 </head>
 <body>
@@ -85,6 +90,11 @@
     <button class="btn-out" id="btnOut" type="button">Log out</button>
   </div>
 </nav>
+
+<div class="notice" id="poolNotice">
+  <div class="notice-txt">&#9888;&#65039; <b>Heads up:</b> we added a new <b>3rd-place bonus (+5)</b> and corrected the Round-of-32 third-place matchups. Please reopen and <b>re-check your knockout picks</b> before the deadline.</div>
+  <button type="button" id="noticeClose" aria-label="Dismiss notice">&times;</button>
+</div>
 
 <div class="wrap">
   <div id="loading" class="loadingline">Loading the hub…</div>
@@ -129,7 +139,7 @@
           <select id="admChamp" style="padding:9px;border:1px solid #d7d7d7;border-radius:7px;min-width:180px"></select>
         </div>
         <div>
-          <label style="display:block;font-size:12.5px;font-weight:700;color:#6e6e6e;text-transform:uppercase">3rd place (M103 winner)</label>
+          <label style="display:block;font-size:12.5px;font-weight:700;color:#6e6e6e;text-transform:uppercase">3rd-place bonus</label>
           <select id="admThird" style="padding:9px;border:1px solid #d7d7d7;border-radius:7px;min-width:180px"></select>
         </div>
         <div>
@@ -237,7 +247,7 @@
     const fin = [adv["bx-FIN-s0"], adv["bx-FIN-s1"]].filter(Boolean);
     let html = `<div class="champrow"><div class="lbl">🏆 Predicted Champion</div><div class="val">${escapeHtml(champ)}</div></div>`;
     if(fin.length) html += `<div class="pk"><span class="k">Finalists</span><span>${fin.map(escapeHtml).join("  vs  ")}</span></div>`;
-    if(p.third) html += `<div class="pk"><span class="k">3rd place pick</span><span>${escapeHtml(p.third)}</span></div>`;
+    if(p.third) html += `<div class="pk"><span class="k">3rd place bonus pick</span><span>${escapeHtml(p.third)}</span></div>`;
     if(p.tiegoals) html += `<div class="pk"><span class="k">Tie-breaker (goals in Final)</span><span>${escapeHtml(p.tiegoals)}</span></div>`;
 
     html += `<div class="seclbl">Group winners & runners-up</div>`;
@@ -473,6 +483,14 @@
   }
   load();
   setInterval(load, 120000); // refresh every 2 minutes (flips LIVE markers, picks up posted results)
+})();
+</script>
+<script>
+(function(){
+  var n=document.getElementById('poolNotice'); if(!n) return;
+  try{ if(localStorage.getItem('wc2026_notice_3rdplace')==='dismissed') n.style.display='none'; }catch(e){}
+  var b=document.getElementById('noticeClose');
+  if(b) b.addEventListener('click', function(){ n.style.display='none'; try{ localStorage.setItem('wc2026_notice_3rdplace','dismissed'); }catch(e){} });
 })();
 </script>
 </body>
