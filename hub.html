@@ -484,6 +484,7 @@
       const [esnap,psnap]=await Promise.all([ getDocs(collection(db,"entries")), getDocs(collection(db,"players")) ]);
       const players={}; psnap.forEach(s=>players[s.id]=s.data()||{});
       const rows=[];
+      const batch=writeBatch(db); let synced=0;
       esnap.forEach(s=>{
         const e=s.data()||{}; const p=e.picks||{};
         const pl=players[s.id]||{};
@@ -517,10 +518,13 @@
         if(ds.champ && !ds.fin.has(ds.champ)) issues.push("Champion not a finalist");
         if(ds.third){ if(!ds.sf.has(ds.third)) issues.push("3rd pick not a semifinalist"); else if(ds.fin.has(ds.third)) issues.push("3rd pick is a finalist"); }
         rows.push({name,submitted,gOK,wadv,r16,qf,sf,fin,champ,third,tb,issues,complete:(issues.length===0&&submitted)});
+        // sync the public standings flag to the real picks (true completeness, independent of submit)
+        batch.set(doc(db,"players",s.id), { complete: issues.length===0 }, { merge:true }); synced++;
       });
+      try{ if(synced) await batch.commit(); }catch(e){ console.error("status sync failed", e); }
       rows.sort((a,b)=> (a.complete-b.complete) || (b.submitted-a.submitted) || String(a.name).localeCompare(String(b.name)) );
       renderAudit(rows);
-      st.textContent=rows.length+" entr"+(rows.length===1?"y":"ies")+" checked";
+      st.textContent=rows.length+" entr"+(rows.length===1?"y":"ies")+" checked · standings synced";
       st.style.color="#444444";
     }catch(err){ console.error(err); st.textContent="Error: "+(err.message||err); st.style.color="#b3402e"; }
   }
