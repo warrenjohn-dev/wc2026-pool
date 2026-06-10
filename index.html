@@ -64,6 +64,8 @@
   .btn-submit-lg { background:#161616; color:#fff; border:none; border-radius:10px; padding:14px 28px; font-size:15px; font-weight:800; cursor:pointer; white-space:nowrap; }
   .btn-submit-lg:hover { background:#333333; }
   .btn-submit-lg:disabled { opacity:.5; cursor:not-allowed; }
+  .backupnote { align-self:stretch; text-align:center; margin-top:14px; font-size:12.5px; color:#6e6e6e; }
+  .backupnote b { color:#161616; }
   .pagetag { font-size:10px; color:#9a9a9a; font-weight:700; text-transform:uppercase; letter-spacing:1px; text-align:right; margin-bottom:4px; }
   .submitline { display:flex; gap:30px; flex-wrap:wrap; margin-top:11px; padding:8px 12px; border:1.5px solid #6e6e6e; border-radius:7px; background:#f6f6f6; font-size:12px; }
   .submitline b { color:#161616; }
@@ -259,7 +261,7 @@
   <div class="nav-in">
     <span class="brand">FIFA World Cup 2026</span>
     <a class="navlink active" href="index.html?edit=1">My Picks</a>
-    <a class="navlink" href="hub.html">Main Hub</a>
+    <a class="navlink" href="hub.html">Pool Hub</a>
     <span class="navspace"></span>
     <span class="savestat" id="saveStatus"></span>
     <button class="btn-clear" id="btnClear" onclick="clearAll()">Clear</button>
@@ -394,8 +396,10 @@
       <b>Done with your bracket?</b>
       <span>Your picks auto-save as you go. Submitting adds you to the standings — you can still edit until the deadline.</span>
     </div>
-    <button class="btn-submit-lg" id="btnSubmit" type="button">✓ Submit &amp; view Main Hub</button>
+    <button class="btn-submit-lg" id="btnSubmit" type="button">✓ Submit &amp; view Pool Hub</button>
   </div>
+
+  <p class="backupnote">💾 Tip: your picks auto-save to your account, but it's smart to hit <b>⬇ PDF</b> (top-right) and keep a copy as a backup.</p>
 
 </div>
 
