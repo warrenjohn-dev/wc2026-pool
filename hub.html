@@ -222,6 +222,7 @@
   onAuthStateChanged(auth, (user)=>{
     if(!user){ location.href="index.html"; return; }
     me = user;
+    if(!revealed()) syncMyStatus(user.uid);
     $("who").textContent = user.displayName || (user.email? user.email.split("@")[0] : "Player");
     $("loading").style.display="none";
     $("content").style.display="block";
@@ -236,6 +237,27 @@
     initAdmin(user);
   });
 
+  /* Recompute MY completeness from MY own entry and update MY standings flag — keeps status honest without admin action. */
+  function entryComplete(p){
+    const g=p.groups||{}, wild=p.wild||{}, adv=p.adv||{};
+    const L=["A","B","C","D","E","F","G","H","I","J","K","L"];
+    for(const x of L){ const v=g[x]||{}; if(!(v.g1&&v.g2&&v.g1!==v.g2)) return false; }
+    let wadv=0; Object.values(wild).forEach(x=>{ if(x&&x.adv&&x.team) wadv++; }); if(wadv!==8) return false;
+    const cnt=f=>Object.keys(adv).filter(id=>id.includes(f)&&adv[id]).length;
+    if(cnt("16-")!==16||cnt("QF-")!==8||cnt("SF-")!==4||cnt("FIN-")!==2) return false;
+    if(!adv["bx-CHAMP"]||!p.third||p.tiegoals===""||p.tiegoals==null) return false;
+    const ds=deriveSets(p); const out=(a,b)=>[...a].some(t=>!b.has(t));
+    if(out(ds.r16,ds.r32)||out(ds.qf,ds.r16)||out(ds.sf,ds.qf)||out(ds.fin,ds.sf)) return false;
+    if(ds.champ && !ds.fin.has(ds.champ)) return false;
+    if(ds.third){ if(!ds.sf.has(ds.third)) return false; if(ds.fin.has(ds.third)) return false; }
+    return true;
+  }
+  async function syncMyStatus(uid){
+    try{
+      const s=await getDoc(doc(db,"entries",uid));
+      if(s.exists() && s.data().picks){ await setDoc(doc(db,"players",uid), { complete: entryComplete(s.data().picks) }, { merge:true }); }
+    }catch(e){ /* silent — non-critical */ }
+  }
   function startStandings(){
     onSnapshot(collection(db, "players"), (snap)=>{
       const rows = [];

@@ -1027,7 +1027,16 @@ populateBracket();
     setStatus("Loading your picks…","");
     try{
       const snap = await getDoc(doc(db, "entries", user.uid));
-      if(snap.exists() && snap.data().picks){ restorePicks(snap.data().picks); setStatus("Loaded ✓","ok"); }
+      if(snap.exists() && snap.data().picks){
+        restorePicks(snap.data().picks); setStatus("Loaded ✓","ok");
+        // keep my standings status honest without needing to re-save
+        try{
+          if(window.computeCompleteness && !deadlinePassed()){
+            const ok = window.computeCompleteness(snap.data().picks).ok;
+            setDoc(doc(db, "players", user.uid), { complete: ok }, { merge:true }).catch(()=>{});
+          }
+        }catch(e){}
+      }
       else { setStatus("New entry — make your picks","" ); }
     }catch(e){ setStatus("Couldn't load (working offline)","err"); console.error(e); }
   }
