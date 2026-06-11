@@ -34,6 +34,7 @@
   th{ font-size:12.5px; text-transform:uppercase; letter-spacing:.3px; color:var(--taupe); }
   td.rank{ width:34px; color:var(--taupe); font-weight:700; }
   td.pts{ text-align:right; font-weight:800; }
+  td.alive{ text-align:center; font-weight:700; color:#161616; }
   tr.me{ background:#f3f3f3; }
   .namebtn{ background:none; border:none; padding:0; font-size:15.5px; font-weight:700; color:var(--ink); cursor:pointer; text-align:left; }
   .namebtn:hover{ color:var(--clay); text-decoration:underline; }
@@ -135,8 +136,8 @@
       <div class="card">
         <h2>Standings</h2>
         <table>
-          <thead><tr><th>#</th><th>Player</th><th>Status</th><th style="text-align:right">Points</th></tr></thead>
-          <tbody id="standingsBody"><tr><td colspan="4" class="empty">No entries yet.</td></tr></tbody>
+          <thead><tr><th>#</th><th>Player</th><th>Status</th><th style="text-align:center">Teams left</th><th style="text-align:right">Points</th></tr></thead>
+          <tbody id="standingsBody"><tr><td colspan="5" class="empty">No entries yet.</td></tr></tbody>
         </table>
         <div class="empty" id="pickHint" style="margin-top:8px"></div>
       </div>
@@ -270,7 +271,7 @@
         || String(a.displayName||a.username).localeCompare(String(b.displayName||b.username))
       );
       const body = $("standingsBody");
-      if(rows.length===0){ body.innerHTML = '<tr><td colspan="4" class="empty">No entries yet — be the first to submit!</td></tr>'; return; }
+      if(rows.length===0){ body.innerHTML = '<tr><td colspan="5" class="empty">No entries yet — be the first to submit!</td></tr>'; return; }
       body.innerHTML = "";
       rows.forEach((r, i)=>{
         const tr = document.createElement("tr");
@@ -283,11 +284,12 @@
         const status = r.submitted
           ? (r.complete===true ? '<span class="badge done">Completed</span>' : '<span class="badge bad">Incomplete</span>')
           : '<span class="badge no">In progress</span>';
-        tr.innerHTML = `<td class="rank">${i+1}</td><td>${nameCell}</td><td>${status}</td><td class="pts">${r.points||0}</td>`;
+        const left = (typeof r.teamsLeft==="number") ? r.teamsLeft : 32;
+        tr.innerHTML = `<td class="rank">${i+1}</td><td>${nameCell}</td><td>${status}</td><td class="alive">${left}</td><td class="pts">${r.points||0}</td>`;
         body.appendChild(tr);
       });
       body.querySelectorAll(".namebtn").forEach(b=> b.addEventListener("click", ()=> openPicks(b.dataset.uid, b.dataset.name)) );
-    }, (err)=>{ console.error(err); $("standingsBody").innerHTML = '<tr><td colspan="4" class="empty">Couldn\'t load standings.</td></tr>'; });
+    }, (err)=>{ console.error(err); $("standingsBody").innerHTML = '<tr><td colspan="5" class="empty">Couldn\'t load standings.</td></tr>'; });
   }
 
   async function openPicks(uid, name){
@@ -472,6 +474,13 @@
     try{
       await setDoc(doc(db,"meta","results"), {...actual, updatedAt:serverTimestamp()}, {merge:true});
       const actualSets={ r32:new Set(actual.r32), r16:new Set(actual.r16), qf:new Set(actual.qf), sf:new Set(actual.sf), fin:new Set(actual.fin), champ:actual.champ, third:actual.third };
+      // "Still alive" = the deepest round that has results entered.
+      const aliveSet = actual.champ ? new Set([actual.champ])
+        : (actual.fin.length ? new Set(actual.fin)
+        : (actual.sf.length ? new Set(actual.sf)
+        : (actual.qf.length ? new Set(actual.qf)
+        : (actual.r16.length ? new Set(actual.r16)
+        : (actual.r32.length ? new Set(actual.r32) : null)))));
       const entries = await getDocs(collection(db,"entries"));
       const batch = writeBatch(db); let n=0;
       entries.forEach(snap=>{
@@ -483,7 +492,9 @@
         const g=e.picks.tiegoals;
         const tbGoals=(g!=="" && g!=null && actual.finalGoals!=null) ? Math.abs(Number(g)-actual.finalGoals) : 999;
         const tbThird=(ds.third && actual.third && ds.third===actual.third)?1:0;
-        batch.set(doc(db,"players",snap.id), {points:b.total, breakdown:b, tbChamp, tbGoals, tbThird, scoredAt:serverTimestamp()}, {merge:true}); n++;
+        // teams still active = how many of this player's predicted knockout teams are still alive
+        const teamsLeft = aliveSet ? [...ds.r32].filter(t=>aliveSet.has(t)).length : ds.r32.size;
+        batch.set(doc(db,"players",snap.id), {points:b.total, breakdown:b, tbChamp, tbGoals, tbThird, teamsLeft, scoredAt:serverTimestamp()}, {merge:true}); n++;
       });
       await batch.commit();
       st.textContent="Published ✓ scored "+n+" players"; st.style.color="#444444";
