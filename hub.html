@@ -35,6 +35,7 @@
   td.rank{ width:34px; color:var(--taupe); font-weight:700; }
   td.pts{ text-align:right; font-weight:800; }
   td.alive{ text-align:center; font-weight:700; color:#161616; }
+  td.champ{ font-weight:700; color:#161616; }
   tr.me{ background:#f3f3f3; }
   .namebtn{ background:none; border:none; padding:0; font-size:15.5px; font-weight:700; color:var(--ink); cursor:pointer; text-align:left; }
   .namebtn:hover{ color:var(--clay); text-decoration:underline; }
@@ -136,7 +137,7 @@
       <div class="card">
         <h2>Standings</h2>
         <table>
-          <thead><tr><th>#</th><th>Player</th><th>Status</th><th style="text-align:center">Teams left</th><th style="text-align:right">Points</th></tr></thead>
+          <thead><tr><th>#</th><th>Player</th><th>Champion</th><th style="text-align:center">Teams left</th><th style="text-align:right">Points</th></tr></thead>
           <tbody id="standingsBody"><tr><td colspan="5" class="empty">No entries yet.</td></tr></tbody>
         </table>
         <div class="empty" id="pickHint" style="margin-top:8px"></div>
@@ -234,7 +235,7 @@
       $("deadlineNote").textContent = "Picks lock and become public on " + deadlineStr + ". Until then, everyone's selections stay private.";
       $("pickHint").textContent = "Names become clickable to reveal picks after the deadline.";
     }
-    startStandings();
+    loadChampions().then(startStandings);
     initAdmin(user);
   });
 
@@ -259,6 +260,15 @@
       if(s.exists() && s.data().picks){ await setDoc(doc(db,"players",uid), { complete: entryComplete(s.data().picks) }, { merge:true }); }
     }catch(e){ /* silent — non-critical */ }
   }
+  let champMap = {};        // uid -> champion pick (populated after the deadline, when entries are readable)
+  async function loadChampions(){
+    if(!revealed()) return;
+    try{
+      const snap = await getDocs(collection(db,"entries"));
+      const m={}; snap.forEach(s=>{ const e=s.data(); if(e&&e.picks&&e.picks.adv) m[s.id]=e.picks.adv["bx-CHAMP"]||""; });
+      champMap = m;
+    }catch(e){ /* not readable yet (pre-deadline) — leave empty */ }
+  }
   function startStandings(){
     onSnapshot(collection(db, "players"), (snap)=>{
       const rows = [];
@@ -273,6 +283,7 @@
       const body = $("standingsBody");
       if(rows.length===0){ body.innerHTML = '<tr><td colspan="5" class="empty">No entries yet — be the first to submit!</td></tr>'; return; }
       body.innerHTML = "";
+      const showChamp = revealed();
       rows.forEach((r, i)=>{
         const tr = document.createElement("tr");
         if(me && r.uid===me.uid) tr.className="me";
@@ -281,11 +292,9 @@
         const nameCell = canView
           ? `<button class="namebtn" data-uid="${r.uid}" data-name="${name.replace(/"/g,'&quot;')}">${escapeHtml(name)}</button>`
           : escapeHtml(name);
-        const status = r.submitted
-          ? (r.complete===true ? '<span class="badge done">Completed</span>' : '<span class="badge bad">Incomplete</span>')
-          : '<span class="badge no">In progress</span>';
+        const champ = showChamp ? (champMap[r.uid] || "—") : "🔒";
         const left = (typeof r.teamsLeft==="number") ? r.teamsLeft : 32;
-        tr.innerHTML = `<td class="rank">${i+1}</td><td>${nameCell}</td><td>${status}</td><td class="alive">${left}</td><td class="pts">${r.points||0}</td>`;
+        tr.innerHTML = `<td class="rank">${i+1}</td><td>${nameCell}</td><td class="champ">${escapeHtml(champ)}</td><td class="alive">${left}</td><td class="pts">${r.points||0}</td>`;
         body.appendChild(tr);
       });
       body.querySelectorAll(".namebtn").forEach(b=> b.addEventListener("click", ()=> openPicks(b.dataset.uid, b.dataset.name)) );
