@@ -632,7 +632,6 @@
         todayBox.innerHTML = today.map(function(m){
           var right;
           if(finished(m)) right = '<span class="mscore">' + m.score.ft[0] + '\u2013' + m.score.ft[1] + ' <span class="fttag">FT</span></span>';
-          else if(m.ko <= now) right = '<span class="mlive">\u25CF LIVE</span>';
           else right = '<span class="mtime">' + fmtTime(m.ko) + '</span>';
           return '<div class="mrow"><div class="mteams">' + teams(m) + '<div class="mmeta">' + tag(m) + (m.ground? ' \u00B7 ' + esc(m.ground):'') + '</div></div><div class="mright">' + right + '</div></div>';
         }).join("");
