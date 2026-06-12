@@ -35,7 +35,7 @@
   td.rank{ width:34px; color:var(--taupe); font-weight:700; }
   td.pts{ text-align:right; font-weight:800; }
   td.alive{ text-align:center; font-weight:700; color:#161616; }
-  td.champ{ font-weight:700; color:#161616; }
+  td.champ{ font-size:12px; font-weight:600; color:#6e6e6e; text-align:center; }
   tr.me{ background:#f3f3f3; }
   .namebtn{ background:none; border:none; padding:0; font-size:15.5px; font-weight:700; color:var(--ink); cursor:pointer; text-align:left; }
   .namebtn:hover{ color:var(--clay); text-decoration:underline; }
@@ -137,7 +137,7 @@
       <div class="card">
         <h2>Standings</h2>
         <table>
-          <thead><tr><th>#</th><th>Player</th><th>Champion</th><th style="text-align:center">Teams left</th><th style="text-align:right">Points</th></tr></thead>
+          <thead><tr><th>#</th><th>Player</th><th style="text-align:center">Teams left</th><th style="text-align:center">Champion</th><th style="text-align:right">Points</th></tr></thead>
           <tbody id="standingsBody"><tr><td colspan="5" class="empty">No entries yet.</td></tr></tbody>
         </table>
         <div class="empty" id="pickHint" style="margin-top:8px"></div>
@@ -294,7 +294,7 @@
           : escapeHtml(name);
         const champ = showChamp ? (champMap[r.uid] || "—") : "🔒";
         const left = (typeof r.teamsLeft==="number") ? r.teamsLeft : 32;
-        tr.innerHTML = `<td class="rank">${i+1}</td><td>${nameCell}</td><td class="champ">${escapeHtml(champ)}</td><td class="alive">${left}</td><td class="pts">${r.points||0}</td>`;
+        tr.innerHTML = `<td class="rank">${i+1}</td><td>${nameCell}</td><td class="alive">${left}</td><td class="champ">${escapeHtml(champ)}</td><td class="pts">${r.points||0}</td>`;
         body.appendChild(tr);
       });
       body.querySelectorAll(".namebtn").forEach(b=> b.addEventListener("click", ()=> openPicks(b.dataset.uid, b.dataset.name)) );
