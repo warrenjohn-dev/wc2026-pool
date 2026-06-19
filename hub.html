@@ -485,13 +485,14 @@
     try{
       await setDoc(doc(db,"meta","results"), {...actual, updatedAt:serverTimestamp()}, {merge:true});
       const actualSets={ r32:new Set(actual.r32), r16:new Set(actual.r16), qf:new Set(actual.qf), sf:new Set(actual.sf), fin:new Set(actual.fin), champ:actual.champ, third:actual.third };
-      // "Still alive" = the deepest round that has results entered.
+      // "Still alive" = the deepest round that has been FULLY entered (avoids a half-filled
+      // round cratering the count; stays 32 until a whole round's results are in).
       const aliveSet = actual.champ ? new Set([actual.champ])
-        : (actual.fin.length ? new Set(actual.fin)
-        : (actual.sf.length ? new Set(actual.sf)
-        : (actual.qf.length ? new Set(actual.qf)
-        : (actual.r16.length ? new Set(actual.r16)
-        : (actual.r32.length ? new Set(actual.r32) : null)))));
+        : (actual.fin.length>=2 ? new Set(actual.fin)
+        : (actual.sf.length>=4 ? new Set(actual.sf)
+        : (actual.qf.length>=8 ? new Set(actual.qf)
+        : (actual.r16.length>=16 ? new Set(actual.r16)
+        : (actual.r32.length>=32 ? new Set(actual.r32) : null)))));
       const entries = await getDocs(collection(db,"entries"));
       const batch = writeBatch(db); let n=0;
       entries.forEach(snap=>{
