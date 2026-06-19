@@ -39,13 +39,13 @@
   .scrollx{ overflow-x:auto; }
   table.standings th.ctr{ text-align:center; }
   td.rc{ text-align:center; white-space:nowrap; }
-  td.rc .p{ font-weight:700; font-size:13px; color:#161616; }
+  td.rc .p{ font-weight:700; font-size:13px; color:#1f8a4c; }
   td.rc .p.z{ color:#9a9a9a; font-weight:500; }
   td.rc .c{ display:block; font-size:9px; color:#9a9a9a; margin-top:1px; }
-  button.totbtn{ font:inherit; font-weight:800; color:#b3402e; cursor:pointer; padding:3px 10px; border:1px solid rgba(179,64,46,.35); border-radius:7px; background:rgba(179,64,46,.07); }
-  button.totbtn:hover{ background:#b3402e; color:#fff; border-color:#b3402e; }
-  button.alivebtn{ font:inherit; font-weight:700; color:#b3402e; cursor:pointer; padding:3px 10px; border:1px solid rgba(179,64,46,.35); border-radius:7px; background:rgba(179,64,46,.07); }
-  button.alivebtn:hover{ background:#b3402e; color:#fff; border-color:#b3402e; }
+  button.totbtn{ font:inherit; font-weight:800; color:#161616; cursor:pointer; padding:3px 10px; border:1px solid rgba(22,22,22,.30); border-radius:7px; background:rgba(22,22,22,.05); }
+  button.totbtn:hover{ background:#161616; color:#fff; border-color:#161616; }
+  button.alivebtn{ font:inherit; font-weight:700; color:#161616; cursor:pointer; padding:3px 10px; border:1px solid rgba(22,22,22,.30); border-radius:7px; background:rgba(22,22,22,.05); }
+  button.alivebtn:hover{ background:#161616; color:#fff; border-color:#161616; }
   table.standings th.grp{ text-align:center; font-size:10px; letter-spacing:.5px; color:#9a9a9a; font-weight:700; padding-bottom:2px; border-bottom:1px solid #eee; }
   .tlhead{ font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:#6e6e6e; font-weight:700; margin:12px 0 8px; }
   .tchips{ display:flex; flex-wrap:wrap; gap:6px; }
@@ -61,8 +61,8 @@
   .pcard .tm .miss{ color:#bbbbbb; }
   .pcard.tot{ background:linear-gradient(180deg,#6e6e6e,#161616); border:none; } .pcard.tot .rd{ color:#fff; opacity:.85; } .pcard.tot .pp{ color:#fff; font-size:20px; }
   tr.me{ background:#f3f3f3; }
-  .namebtn{ background:none; border:none; padding:0; font-size:15.5px; font-weight:700; color:#b3402e; cursor:pointer; text-align:left; text-decoration:underline; text-decoration-color:rgba(179,64,46,.45); text-underline-offset:3px; }
-  .namebtn:hover{ text-decoration-color:#b3402e; }
+  .namebtn{ font:inherit; font-size:15.5px; font-weight:700; color:#2563eb; cursor:pointer; text-align:left; padding:3px 10px; border:1px solid rgba(37,99,235,.35); border-radius:7px; background:rgba(37,99,235,.07); }
+  .namebtn:hover{ background:#2563eb; color:#fff; border-color:#2563eb; }
   .badge{ font-size:11.5px; font-weight:800; padding:2px 7px; border-radius:20px; }
   .badge.done{ background:#161616; color:#fff; }
   .badge.bad{ background:#fbeae6; color:#b3402e; }
@@ -157,7 +157,7 @@
     <div class="grid">
       <div class="card">
         <h2>Standings</h2>
-        <div class="empty" style="margin:-4px 0 10px">Tip: tap a player's <b style="color:#b3402e">name</b>, <b style="color:#b3402e">teams left</b>, or <b style="color:#b3402e">total</b> for a detailed breakdown.</div>
+        <div class="empty" style="margin:-4px 0 10px">Tip: tap a player's <b style="color:#2563eb">name</b>, <b style="color:#161616">teams left</b>, or <b style="color:#161616">total</b> for a detailed breakdown.</div>
         <div class="scrollx">
         <table class="standings">
           <thead>
