@@ -25,7 +25,7 @@
   .wrap{ max-width:1080px; margin:0 auto; padding:22px 16px 60px; }
   h1{ font-family:'Outfit','Inter',system-ui,sans-serif; font-size:29.5px; margin:6px 0 2px; }
   .sub{ color:var(--taupe); font-size:14.5px; margin-bottom:20px; }
-  .grid{ display:grid; grid-template-columns:1.3fr 1fr; gap:18px; align-items:start; }
+  .grid{ display:grid; grid-template-columns:1fr; gap:18px; align-items:start; }
   @media(max-width:820px){ .grid{ grid-template-columns:1fr; } }
   .card{ background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px 18px; box-shadow:0 3px 14px rgba(0,0,0,.05); }
   .card h2{ font-size:14.5px; letter-spacing:.4px; text-transform:uppercase; color:var(--taupe); margin:0 0 12px; }
@@ -36,6 +36,23 @@
   td.pts{ text-align:right; font-weight:800; }
   td.alive{ text-align:center; font-weight:700; color:#161616; }
   td.champ{ font-size:12px; font-weight:600; color:#6e6e6e; text-align:center; }
+  .scrollx{ overflow-x:auto; }
+  table.standings th.ctr{ text-align:center; }
+  td.rc{ text-align:center; white-space:nowrap; }
+  td.rc .p{ font-weight:700; font-size:13px; color:#161616; }
+  td.rc .p.z{ color:#9a9a9a; font-weight:500; }
+  td.rc .c{ display:block; font-size:9px; color:#9a9a9a; margin-top:1px; }
+  button.totbtn{ background:none; border:none; font:inherit; font-weight:800; color:#161616; cursor:pointer; padding:2px 6px; border-radius:6px; }
+  button.totbtn:hover{ background:#f0f0f0; }
+  .psum{ display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:8px; margin:6px 0 8px; }
+  .pcard{ border:1px solid #e2e2e2; border-radius:10px; padding:9px 12px; }
+  .pcard .pch{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+  .pcard .rd{ font-size:10.5px; text-transform:uppercase; letter-spacing:.4px; color:#6e6e6e; font-weight:700; }
+  .pcard .pp{ font-size:15px; font-weight:800; color:#161616; }
+  .pcard .pp.z{ color:#9a9a9a; }
+  .pcard .tm{ font-size:12px; color:#161616; margin-top:5px; line-height:1.5; }
+  .pcard .tm .miss{ color:#bbbbbb; }
+  .pcard.tot{ background:linear-gradient(180deg,#6e6e6e,#161616); border:none; } .pcard.tot .rd{ color:#fff; opacity:.85; } .pcard.tot .pp{ color:#fff; font-size:20px; }
   tr.me{ background:#f3f3f3; }
   .namebtn{ background:none; border:none; padding:0; font-size:15.5px; font-weight:700; color:var(--ink); cursor:pointer; text-align:left; }
   .namebtn:hover{ color:var(--clay); text-decoration:underline; }
@@ -133,10 +150,12 @@
     <div class="grid">
       <div class="card">
         <h2>Standings</h2>
-        <table>
-          <thead><tr><th>#</th><th>Player</th><th style="text-align:center">Teams left</th><th style="text-align:center">Champion</th><th style="text-align:right">Points</th></tr></thead>
-          <tbody id="standingsBody"><tr><td colspan="5" class="empty">No entries yet.</td></tr></tbody>
+        <div class="scrollx">
+        <table class="standings">
+          <thead><tr><th>#</th><th>Player</th><th class="ctr">Teams left</th><th class="ctr">Champion</th><th class="ctr">R32</th><th class="ctr">R16</th><th class="ctr">QF</th><th class="ctr">SF</th><th class="ctr">Final</th><th class="ctr">Champ</th><th class="ctr">3rd</th><th style="text-align:right">Total</th></tr></thead>
+          <tbody id="standingsBody"><tr><td colspan="12" class="empty">No entries yet.</td></tr></tbody>
         </table>
+        </div>
         <div class="empty" id="pickHint" style="margin-top:8px"></div>
       </div>
 
@@ -260,13 +279,16 @@
     }catch(e){ /* silent — non-critical */ }
   }
   let champMap = {};        // uid -> champion pick (populated after the deadline, when entries are readable)
+  let picksMap = {};        // uid -> full picks object (for the per-player points summary)
+  let actualResults = null; // published actual results (meta/results)
   async function loadChampions(){
     if(!revealed()) return;
     try{
       const snap = await getDocs(collection(db,"entries"));
-      const m={}; snap.forEach(s=>{ const e=s.data(); if(e&&e.picks&&e.picks.adv) m[s.id]=e.picks.adv["bx-CHAMP"]||""; });
-      champMap = m;
+      const m={}, pm={}; snap.forEach(s=>{ const e=s.data(); if(e&&e.picks){ if(e.picks.adv) m[s.id]=e.picks.adv["bx-CHAMP"]||""; pm[s.id]=e.picks; } });
+      champMap = m; picksMap = pm;
     }catch(e){ /* not readable yet (pre-deadline) — leave empty */ }
+    try{ const r=await getDoc(doc(db,"meta","results")); if(r.exists()) actualResults=r.data(); }catch(e){}
   }
   function startStandings(){
     onSnapshot(collection(db, "players"), (snap)=>{
@@ -280,9 +302,11 @@
         || String(a.displayName||a.username).localeCompare(String(b.displayName||b.username))
       );
       const body = $("standingsBody");
-      if(rows.length===0){ body.innerHTML = '<tr><td colspan="5" class="empty">No entries yet — be the first to submit!</td></tr>'; return; }
+      if(rows.length===0){ body.innerHTML = '<tr><td colspan="12" class="empty">No entries yet — be the first to submit!</td></tr>'; return; }
       body.innerHTML = "";
       const showChamp = revealed();
+      const rc=(pts, mult)=>{ const p=pts||0; const c=p/mult; return `<td class="rc"><span class="p${p?'':' z'}">${p?('+'+p):'0'}</span><span class="c">${c}</span></td>`; };
+      const bonus=(pts, val)=>{ const ok=(pts||0)>0; return `<td class="rc"><span class="p${ok?'':' z'}">${ok?('✓ +'+val):'—'}</span></td>`; };
       rows.forEach((r, i)=>{
         const tr = document.createElement("tr");
         if(me && r.uid===me.uid) tr.className="me";
@@ -293,11 +317,17 @@
           : escapeHtml(name);
         const champ = showChamp ? (champMap[r.uid] || "—") : "🔒";
         const left = (typeof r.teamsLeft==="number") ? r.teamsLeft : 32;
-        tr.innerHTML = `<td class="rank">${i+1}</td><td>${nameCell}</td><td class="alive">${left}</td><td class="champ">${escapeHtml(champ)}</td><td class="pts">${r.points||0}</td>`;
+        const b = r.breakdown || {r32:0,r16:0,qf:0,sf:0,fin:0,champ:0,third:0};
+        const totCell = canView
+          ? `<td class="pts" style="text-align:right"><button class="totbtn" data-uid="${r.uid}" data-name="${name.replace(/"/g,'&quot;')}">${r.points||0}</button></td>`
+          : `<td class="pts" style="text-align:right">${r.points||0}</td>`;
+        tr.innerHTML = `<td class="rank">${i+1}</td><td>${nameCell}</td><td class="alive">${left}</td><td class="champ">${escapeHtml(champ)}</td>`
+          + rc(b.r32,1) + rc(b.r16,2) + rc(b.qf,4) + rc(b.sf,8) + rc(b.fin,16) + bonus(b.champ,50) + bonus(b.third,5) + totCell;
         body.appendChild(tr);
       });
       body.querySelectorAll(".namebtn").forEach(b=> b.addEventListener("click", ()=> openPicks(b.dataset.uid, b.dataset.name)) );
-    }, (err)=>{ console.error(err); $("standingsBody").innerHTML = '<tr><td colspan="5" class="empty">Couldn\'t load standings.</td></tr>'; });
+      body.querySelectorAll(".totbtn").forEach(b=> b.addEventListener("click", ()=> openPoints(b.dataset.uid, b.dataset.name)) );
+    }, (err)=>{ console.error(err); $("standingsBody").innerHTML = '<tr><td colspan="12" class="empty">Couldn\'t load standings.</td></tr>'; });
   }
 
   async function openPicks(uid, name){
@@ -311,6 +341,36 @@
       if(!snap.exists() || !snap.data().picks){ $("pmBody").innerHTML = '<div class="empty">No picks saved.</div>'; return; }
       renderPicks(snap.data().picks);
     }catch(e){ console.error(e); $("pmBody").innerHTML = '<div class="empty">These picks aren\'t viewable yet.</div>'; }
+  }
+
+  async function openPoints(uid, name){
+    if(!revealed() && !(me && uid===me.uid)){ alert("Picks are hidden until " + deadlineStr + "."); return; }
+    $("pmName").textContent = name + " — Points";
+    $("pmSub").textContent = "How these points were earned";
+    $("pmBody").innerHTML = '<div class="loadingline">Loading…</div>';
+    $("pickModal").classList.add("show");
+    let picks = picksMap[uid];
+    if(!picks){ try{ const s=await getDoc(doc(db,"entries",uid)); if(s.exists()) picks=s.data().picks; }catch(e){} }
+    if(!picks){ $("pmBody").innerHTML='<div class="empty">No picks saved.</div>'; return; }
+    if(!actualResults){ $("pmBody").innerHTML='<div class="empty">No results published yet — points appear once scoring begins.</div>'; return; }
+    const s=deriveSets(picks);
+    const A={ r32:new Set(actualResults.r32||[]), r16:new Set(actualResults.r16||[]), qf:new Set(actualResults.qf||[]), sf:new Set(actualResults.sf||[]), fin:new Set(actualResults.fin||[]) };
+    const hits=(P,Q)=>[...P].filter(t=>Q.has(t));
+    const rounds=[["Round of 32",hits(s.r32,A.r32),1],["Round of 16",hits(s.r16,A.r16),2],["Quarter-finals",hits(s.qf,A.qf),4],["Semi-finals",hits(s.sf,A.sf),8],["Final",hits(s.fin,A.fin),16]];
+    let total=0, cards="";
+    rounds.forEach(([label,arr,mult])=>{
+      const pts=arr.length*mult; total+=pts;
+      cards += '<div class="pcard"><div class="pch"><span class="rd">'+label+' · '+arr.length+' correct</span><span class="pp'+(pts?'':' z')+'">'+(pts?('+'+pts):'0')+'</span></div>'+
+        '<div class="tm">'+(arr.length? arr.map(escapeHtml).join(', ') : '<span class="miss">none</span>')+'</div></div>';
+    });
+    const champOK = s.champ && actualResults.champ && s.champ===actualResults.champ; if(champOK) total+=50;
+    cards += '<div class="pcard"><div class="pch"><span class="rd">Champion</span><span class="pp'+(champOK?'':' z')+'">'+(champOK?'+50':'0')+'</span></div>'+
+      '<div class="tm">'+(s.champ?escapeHtml(s.champ):'—')+(champOK?' ✓':' <span class="miss">✗</span>')+'</div></div>';
+    const thirdOK = s.third && actualResults.third && s.third===actualResults.third; if(thirdOK) total+=5;
+    cards += '<div class="pcard"><div class="pch"><span class="rd">3rd place</span><span class="pp'+(thirdOK?'':' z')+'">'+(thirdOK?'+5':'0')+'</span></div>'+
+      '<div class="tm">'+(s.third?escapeHtml(s.third):'—')+(thirdOK?' ✓':' <span class="miss">✗</span>')+'</div></div>';
+    const totalCard = '<div class="pcard tot" style="grid-column:1 / -1"><div class="pch"><span class="rd">Total · of 215</span><span class="pp">'+total+'</span></div></div>';
+    $("pmBody").innerHTML = '<div class="psum">'+totalCard+cards+'</div>';
   }
 
   /* ---- Full bracket reconstruction for the read-only reveal ---- */
