@@ -42,8 +42,15 @@
   td.rc .p{ font-weight:700; font-size:13px; color:#161616; }
   td.rc .p.z{ color:#9a9a9a; font-weight:500; }
   td.rc .c{ display:block; font-size:9px; color:#9a9a9a; margin-top:1px; }
-  button.totbtn{ background:none; border:none; font:inherit; font-weight:800; color:#161616; cursor:pointer; padding:2px 6px; border-radius:6px; }
-  button.totbtn:hover{ background:#f0f0f0; }
+  button.totbtn{ background:none; border:none; font:inherit; font-weight:800; color:#161616; cursor:pointer; padding:2px 6px; border-radius:6px; text-decoration:underline; text-decoration-style:dotted; text-decoration-color:#c4c4c4; text-underline-offset:3px; }
+  button.totbtn:hover{ background:#f0f0f0; text-decoration-style:solid; color:var(--clay); }
+  table.standings th.grp{ text-align:center; font-size:10px; letter-spacing:.5px; color:#9a9a9a; font-weight:700; padding-bottom:2px; border-bottom:1px solid #eee; }
+  button.alivebtn{ background:none; border:none; font:inherit; font-weight:700; color:#161616; cursor:pointer; padding:2px 6px; border-radius:6px; text-decoration:underline; text-decoration-style:dotted; text-decoration-color:#c4c4c4; text-underline-offset:3px; }
+  button.alivebtn:hover{ background:#f0f0f0; text-decoration-style:solid; color:var(--clay); }
+  .tlhead{ font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:#6e6e6e; font-weight:700; margin:12px 0 8px; }
+  .tchips{ display:flex; flex-wrap:wrap; gap:6px; }
+  .tchip{ border:1px solid #e2e2e2; border-radius:20px; padding:4px 12px; font-size:13px; font-weight:600; color:#161616; }
+  .tchip.out{ color:#bbbbbb; border-color:#eee; text-decoration:line-through; }
   .psum{ display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:8px; margin:6px 0 8px; }
   .pcard{ border:1px solid #e2e2e2; border-radius:10px; padding:9px 12px; }
   .pcard .pch{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
@@ -54,8 +61,8 @@
   .pcard .tm .miss{ color:#bbbbbb; }
   .pcard.tot{ background:linear-gradient(180deg,#6e6e6e,#161616); border:none; } .pcard.tot .rd{ color:#fff; opacity:.85; } .pcard.tot .pp{ color:#fff; font-size:20px; }
   tr.me{ background:#f3f3f3; }
-  .namebtn{ background:none; border:none; padding:0; font-size:15.5px; font-weight:700; color:var(--ink); cursor:pointer; text-align:left; }
-  .namebtn:hover{ color:var(--clay); text-decoration:underline; }
+  .namebtn{ background:none; border:none; padding:0; font-size:15.5px; font-weight:700; color:var(--ink); cursor:pointer; text-align:left; text-decoration:underline; text-decoration-style:dotted; text-decoration-color:#c4c4c4; text-underline-offset:3px; }
+  .namebtn:hover{ color:var(--clay); text-decoration:underline; text-decoration-style:solid; }
   .badge{ font-size:11.5px; font-weight:800; padding:2px 7px; border-radius:20px; }
   .badge.done{ background:#161616; color:#fff; }
   .badge.bad{ background:#fbeae6; color:#b3402e; }
@@ -152,7 +159,10 @@
         <h2>Standings</h2>
         <div class="scrollx">
         <table class="standings">
-          <thead><tr><th>#</th><th>Player</th><th class="ctr">Teams left</th><th class="ctr">Champion</th><th class="ctr">R32</th><th class="ctr">R16</th><th class="ctr">QF</th><th class="ctr">SF</th><th class="ctr">Final</th><th class="ctr">Champ</th><th class="ctr">3rd</th><th style="text-align:right">Total</th></tr></thead>
+          <thead>
+            <tr><th colspan="4"></th><th colspan="8" class="grp">Points breakdown per round</th></tr>
+            <tr><th>#</th><th>Player</th><th class="ctr">Teams left</th><th class="ctr">Champion</th><th class="ctr">R32</th><th class="ctr">R16</th><th class="ctr">QF</th><th class="ctr">SF</th><th class="ctr">Final</th><th class="ctr">Champ</th><th class="ctr">3rd</th><th style="text-align:right">Total</th></tr>
+          </thead>
           <tbody id="standingsBody"><tr><td colspan="12" class="empty">No entries yet.</td></tr></tbody>
         </table>
         </div>
@@ -317,16 +327,20 @@
           : escapeHtml(name);
         const champ = showChamp ? (champMap[r.uid] || "—") : "🔒";
         const left = (typeof r.teamsLeft==="number") ? r.teamsLeft : 32;
+        const leftCell = canView
+          ? `<td class="alive"><button class="alivebtn" data-uid="${r.uid}" data-name="${name.replace(/"/g,'&quot;')}">${left}</button></td>`
+          : `<td class="alive">${left}</td>`;
         const b = r.breakdown || {r32:0,r16:0,qf:0,sf:0,fin:0,champ:0,third:0};
         const totCell = canView
           ? `<td class="pts" style="text-align:right"><button class="totbtn" data-uid="${r.uid}" data-name="${name.replace(/"/g,'&quot;')}">${r.points||0}</button></td>`
           : `<td class="pts" style="text-align:right">${r.points||0}</td>`;
-        tr.innerHTML = `<td class="rank">${i+1}</td><td>${nameCell}</td><td class="alive">${left}</td><td class="champ">${escapeHtml(champ)}</td>`
+        tr.innerHTML = `<td class="rank">${i+1}</td><td>${nameCell}</td>${leftCell}<td class="champ">${escapeHtml(champ)}</td>`
           + rc(b.r32,1) + rc(b.r16,2) + rc(b.qf,4) + rc(b.sf,8) + rc(b.fin,16) + bonus(b.champ,50) + bonus(b.third,5) + totCell;
         body.appendChild(tr);
       });
       body.querySelectorAll(".namebtn").forEach(b=> b.addEventListener("click", ()=> openPicks(b.dataset.uid, b.dataset.name)) );
       body.querySelectorAll(".totbtn").forEach(b=> b.addEventListener("click", ()=> openPoints(b.dataset.uid, b.dataset.name)) );
+      body.querySelectorAll(".alivebtn").forEach(b=> b.addEventListener("click", ()=> openTeamsLeft(b.dataset.uid, b.dataset.name)) );
     }, (err)=>{ console.error(err); $("standingsBody").innerHTML = '<tr><td colspan="12" class="empty">Couldn\'t load standings.</td></tr>'; });
   }
 
@@ -371,6 +385,41 @@
       '<div class="tm">'+(s.third?escapeHtml(s.third):'—')+(thirdOK?' ✓':' <span class="miss">✗</span>')+'</div></div>';
     const totalCard = '<div class="pcard tot" style="grid-column:1 / -1"><div class="pch"><span class="rd">Total · of 215</span><span class="pp">'+total+'</span></div></div>';
     $("pmBody").innerHTML = '<div class="psum">'+totalCard+cards+'</div>';
+  }
+
+  // deepest FULLY-entered round in the published results (mirrors publish()); null until a whole round is in
+  function aliveSetFromActual(){
+    if(!actualResults) return null;
+    const a=actualResults;
+    if(a.champ) return new Set([a.champ]);
+    if((a.fin||[]).length>=2)  return new Set(a.fin);
+    if((a.sf||[]).length>=4)   return new Set(a.sf);
+    if((a.qf||[]).length>=8)   return new Set(a.qf);
+    if((a.r16||[]).length>=16) return new Set(a.r16);
+    if((a.r32||[]).length>=32) return new Set(a.r32);
+    return null;
+  }
+
+  async function openTeamsLeft(uid, name){
+    if(!revealed() && !(me && uid===me.uid)){ alert("Picks are hidden until " + deadlineStr + "."); return; }
+    $("pmName").textContent = name + " — Teams left";
+    $("pmSub").textContent = "Their picked knockout teams still in the tournament";
+    $("pmBody").innerHTML = '<div class="loadingline">Loading…</div>';
+    $("pickModal").classList.add("show");
+    let picks = picksMap[uid];
+    if(!picks){ try{ const s=await getDoc(doc(db,"entries",uid)); if(s.exists()) picks=s.data().picks; }catch(e){} }
+    if(!picks){ $("pmBody").innerHTML='<div class="empty">No picks saved.</div>'; return; }
+    const mine=[...deriveSets(picks).r32];
+    const alive=aliveSetFromActual();
+    const left = alive ? mine.filter(t=>alive.has(t)) : mine.slice();
+    const out  = alive ? mine.filter(t=>!alive.has(t)) : [];
+    let html = '<div class="tlhead">Still in ('+left.length+')</div><div class="tchips">'
+      + (left.length ? left.map(t=>'<span class="tchip">'+escapeHtml(t)+'</span>').join('') : '<span class="empty">none</span>')
+      + '</div>';
+    if(out.length) html += '<div class="tlhead">Eliminated ('+out.length+')</div><div class="tchips">'
+      + out.map(t=>'<span class="tchip out">'+escapeHtml(t)+'</span>').join('') + '</div>';
+    if(!alive) html += '<div class="empty" style="margin-top:12px">No round fully decided yet — all of their knockout picks still count as alive.</div>';
+    $("pmBody").innerHTML = html;
   }
 
   /* ---- Full bracket reconstruction for the read-only reveal ---- */
