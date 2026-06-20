@@ -210,6 +210,19 @@
       </div>
 
       <div style="margin-top:20px; padding-top:16px; border-top:1px solid #e2e2e2;">
+        <h3 style="margin:0 0 6px; font-family:'Outfit','Inter',sans-serif; font-size:18px; color:#161616;">Eliminated teams</h3>
+        <p style="font-size:14px; color:#6e6e6e; margin:0 0 12px">
+          Tick a country when it's <b>knocked out</b> (group stage included). This is the source of truth for every player's <b>Teams left</b> count and their still-in / eliminated list. Independent of scoring — save it whenever results change.
+        </p>
+        <div id="elimGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:10px;"></div>
+        <div style="margin-top:14px; display:flex; gap:12px; align-items:center; flex-wrap:wrap">
+          <button id="elimSave" style="background:#161616;color:#fff;border:none;border-radius:8px;padding:11px 18px;font-weight:700;cursor:pointer">Save eliminations</button>
+          <button id="elimClear" type="button" style="background:none;border:1px solid #d7d7d7;border-radius:8px;padding:11px 16px;font-weight:600;cursor:pointer;color:#6e6e6e">Clear all</button>
+          <span id="elimStatus" style="font-size:14px;font-weight:700;color:#6e6e6e"></span>
+        </div>
+      </div>
+
+      <div style="margin-top:20px; padding-top:16px; border-top:1px solid #e2e2e2;">
         <h3 style="margin:0 0 6px; font-family:'Outfit','Inter',sans-serif; font-size:18px; color:#161616;">Pick audit</h3>
         <p style="font-size:14px; color:#6e6e6e; margin:0 0 10px">
           Checks every participant for a <b>complete</b> entry — 12 groups, 8 wildcards, full knockout (R16→Final), Champion, 3rd-place bonus, tie-breaker — and flags any <b>inconsistent</b> bracket (e.g. a team advanced that isn't in the round below it). Reads everyone's saved picks.
@@ -292,6 +305,7 @@
   let champMap = {};        // uid -> champion pick (populated after the deadline, when entries are readable)
   let picksMap = {};        // uid -> full picks object (for the per-player points summary)
   let actualResults = null; // published actual results (meta/results)
+  let eliminatedSet = new Set(); // teams the admin has marked knocked out (meta/eliminated) — drives Teams left
   async function loadChampions(){
     if(!revealed()) return;
     try{
@@ -300,6 +314,7 @@
       champMap = m; picksMap = pm;
     }catch(e){ /* not readable yet (pre-deadline) — leave empty */ }
     try{ const r=await getDoc(doc(db,"meta","results")); if(r.exists()) actualResults=r.data(); }catch(e){}
+    try{ const el=await getDoc(doc(db,"meta","eliminated")); if(el.exists()) eliminatedSet=new Set(el.data().teams||[]); }catch(e){}
   }
   function startStandings(){
     onSnapshot(collection(db, "players"), (snap)=>{
@@ -388,19 +403,6 @@
     $("pmBody").innerHTML = '<div class="psum">'+totalCard+cards+'</div>';
   }
 
-  // deepest FULLY-entered round in the published results (mirrors publish()); null until a whole round is in
-  function aliveSetFromActual(){
-    if(!actualResults) return null;
-    const a=actualResults;
-    if(a.champ) return new Set([a.champ]);
-    if((a.fin||[]).length>=2)  return new Set(a.fin);
-    if((a.sf||[]).length>=4)   return new Set(a.sf);
-    if((a.qf||[]).length>=8)   return new Set(a.qf);
-    if((a.r16||[]).length>=16) return new Set(a.r16);
-    if((a.r32||[]).length>=32) return new Set(a.r32);
-    return null;
-  }
-
   async function openTeamsLeft(uid, name){
     if(!revealed() && !(me && uid===me.uid)){ alert("Picks are hidden until " + deadlineStr + "."); return; }
     $("pmName").textContent = name + " — Teams left";
@@ -411,15 +413,14 @@
     if(!picks){ try{ const s=await getDoc(doc(db,"entries",uid)); if(s.exists()) picks=s.data().picks; }catch(e){} }
     if(!picks){ $("pmBody").innerHTML='<div class="empty">No picks saved.</div>'; return; }
     const mine=[...deriveSets(picks).r32];
-    const alive=aliveSetFromActual();
-    const left = alive ? mine.filter(t=>alive.has(t)) : mine.slice();
-    const out  = alive ? mine.filter(t=>!alive.has(t)) : [];
+    const out  = mine.filter(t=>eliminatedSet.has(t));
+    const left = mine.filter(t=>!eliminatedSet.has(t));
     let html = '<div class="tlhead">Still in ('+left.length+')</div><div class="tchips">'
       + (left.length ? left.map(t=>'<span class="tchip">'+escapeHtml(t)+'</span>').join('') : '<span class="empty">none</span>')
       + '</div>';
     if(out.length) html += '<div class="tlhead">Eliminated ('+out.length+')</div><div class="tchips">'
       + out.map(t=>'<span class="tchip out">'+escapeHtml(t)+'</span>').join('') + '</div>';
-    if(!alive) html += '<div class="empty" style="margin-top:12px">No round fully decided yet — all of their knockout picks still count as alive.</div>';
+    if(eliminatedSet.size===0) html += '<div class="empty" style="margin-top:12px">No teams marked eliminated yet — all of their knockout picks still count as alive.</div>';
     $("pmBody").innerHTML = html;
   }
 
@@ -592,14 +593,9 @@
     try{
       await setDoc(doc(db,"meta","results"), {...actual, updatedAt:serverTimestamp()}, {merge:true});
       const actualSets={ r32:new Set(actual.r32), r16:new Set(actual.r16), qf:new Set(actual.qf), sf:new Set(actual.sf), fin:new Set(actual.fin), champ:actual.champ, third:actual.third };
-      // "Still alive" = the deepest round that has been FULLY entered (avoids a half-filled
-      // round cratering the count; stays 32 until a whole round's results are in).
-      const aliveSet = actual.champ ? new Set([actual.champ])
-        : (actual.fin.length>=2 ? new Set(actual.fin)
-        : (actual.sf.length>=4 ? new Set(actual.sf)
-        : (actual.qf.length>=8 ? new Set(actual.qf)
-        : (actual.r16.length>=16 ? new Set(actual.r16)
-        : (actual.r32.length>=32 ? new Set(actual.r32) : null)))));
+      // Teams left is driven by the admin's "Eliminated teams" list (authoritative). Pull the latest.
+      let elim = eliminatedSet;
+      try{ const es=await getDoc(doc(db,"meta","eliminated")); if(es.exists()) elim=new Set(es.data().teams||[]); }catch(e){}
       const entries = await getDocs(collection(db,"entries"));
       const batch = writeBatch(db); let n=0;
       entries.forEach(snap=>{
@@ -611,8 +607,8 @@
         const g=e.picks.tiegoals;
         const tbGoals=(g!=="" && g!=null && actual.finalGoals!=null) ? Math.abs(Number(g)-actual.finalGoals) : 999;
         const tbThird=(ds.third && actual.third && ds.third===actual.third)?1:0;
-        // teams still active = how many of this player's predicted knockout teams are still alive
-        const teamsLeft = aliveSet ? [...ds.r32].filter(t=>aliveSet.has(t)).length : ds.r32.size;
+        // teams still active = this player's predicted knockout teams not yet eliminated
+        const teamsLeft = [...ds.r32].filter(t=>!elim.has(t)).length;
         batch.set(doc(db,"players",snap.id), {points:b.total, breakdown:b, tbChamp, tbGoals, tbThird, teamsLeft, scoredAt:serverTimestamp()}, {merge:true}); n++;
       });
       await batch.commit();
@@ -625,8 +621,42 @@
     let existing={};
     try{ const r=await getDoc(doc(db,"meta","results")); if(r.exists()) existing=r.data(); }catch(e){ console.error(e); }
     buildAdminUI(existing);
+    try{ const el=await getDoc(doc(db,"meta","eliminated")); if(el.exists()) eliminatedSet=new Set(el.data().teams||[]); }catch(e){}
+    renderElimGrid(eliminatedSet);
     $("admPublish").addEventListener("click", publish);
     $("admAudit").addEventListener("click", auditPicks);
+    $("elimSave").addEventListener("click", saveEliminations);
+    $("elimClear").addEventListener("click", ()=>{ document.querySelectorAll(".elimck").forEach(c=>c.checked=false); });
+  }
+
+  function renderElimGrid(elimSet){
+    const g=$("elimGrid"); if(!g) return;
+    let html="";
+    Object.keys(GROUPS).forEach(L=>{
+      html += '<div style="border:1px solid #eee;border-radius:8px;padding:8px 11px">'
+        + '<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#9a9a9a;letter-spacing:.4px;margin-bottom:5px">Group '+L+'</div>';
+      GROUPS[L].forEach(team=>{
+        const ck=elimSet.has(team)?" checked":"";
+        html += '<label style="display:flex;align-items:center;gap:7px;font-size:13.5px;padding:3px 0;cursor:pointer">'
+          + '<input type="checkbox" class="elimck" value="'+team.replace(/"/g,'&quot;')+'"'+ck+'>'+escapeHtml(team)+'</label>';
+      });
+      html += '</div>';
+    });
+    g.innerHTML=html;
+  }
+
+  async function saveEliminations(){
+    const st=$("elimStatus"); st.textContent="Saving…"; st.style.color="#6e6e6e";
+    const teams=[...document.querySelectorAll(".elimck:checked")].map(c=>c.value);
+    try{
+      await setDoc(doc(db,"meta","eliminated"), { teams, updatedAt:serverTimestamp() }, { merge:false });
+      eliminatedSet=new Set(teams);
+      const entries=await getDocs(collection(db,"entries"));
+      const batch=writeBatch(db); let n=0;
+      entries.forEach(snap=>{ const e=snap.data(); if(!e||!e.picks) return; const r32=deriveSets(e.picks).r32; const left=[...r32].filter(t=>!eliminatedSet.has(t)).length; batch.set(doc(db,"players",snap.id), { teamsLeft:left }, { merge:true }); n++; });
+      await batch.commit();
+      st.textContent="Saved \u2713 "+teams.length+" eliminated \u00b7 updated "+n+" players"; st.style.color="#444444";
+    }catch(err){ console.error(err); st.textContent="Error: "+(err.message||err); st.style.color="#b3402e"; }
   }
 
   const GROUP_LETTERS=["A","B","C","D","E","F","G","H","I","J","K","L"];
