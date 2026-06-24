@@ -462,6 +462,7 @@
       snap.forEach(d=> rows.push(d.data()));
       rows.sort((a,b)=>
         (b.points||0)-(a.points||0)
+        || (b.teamsLeft||0)-(a.teamsLeft||0)
         || (b.tbChamp||0)-(a.tbChamp||0)
         || (a.tbGoals==null?999:a.tbGoals)-(b.tbGoals==null?999:b.tbGoals)
         || (b.tbThird||0)-(a.tbThird||0)
@@ -767,6 +768,7 @@
       // rank with the SAME comparator the standings uses, so positions match exactly
       scored.sort((a,b)=>
         (b.b.total||0)-(a.b.total||0)
+        || (b.teamsLeft||0)-(a.teamsLeft||0)
         || (b.tbChamp||0)-(a.tbChamp||0)
         || (a.tbGoals)-(b.tbGoals)
         || (b.tbThird||0)-(a.tbThird||0)
