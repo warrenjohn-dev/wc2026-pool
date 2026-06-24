@@ -316,9 +316,16 @@
     }
     loadChampions().then(startStandings);
     initAdmin(user);
-    try{ if(!sessionStorage.getItem("wc_payseen")){ $("payModal").classList.add("show"); } }catch(e){ $("payModal").classList.add("show"); }
+    maybeShowPayPopup(user.uid);
   });
-  $("payOk").addEventListener("click", ()=>{ $("payModal").classList.remove("show"); try{ sessionStorage.setItem("wc_payseen","1"); }catch(e){} });
+  $("payOk").addEventListener("click", ()=>{ $("payModal").classList.remove("show"); });
+  async function maybeShowPayPopup(uid){
+    try{ if(sessionStorage.getItem("wc_payseen")) return; }catch(e){}
+    let status={};
+    try{ const p=await getDoc(doc(db,"meta","payments")); if(p.exists()) status=p.data().status||{}; }catch(e){}
+    const paid = status[uid]==="cash" || status[uid]==="etransfer";
+    if(!paid){ $("payModal").classList.add("show"); try{ sessionStorage.setItem("wc_payseen","1"); }catch(e){} }  // unpaid: once per browser session; paid: never
+  }
 
   /* Recompute MY completeness from MY own entry and update MY standings flag — keeps status honest without admin action. */
   function entryComplete(p){
