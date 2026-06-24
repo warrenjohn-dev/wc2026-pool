@@ -32,7 +32,10 @@
   table{ width:100%; border-collapse:collapse; }
   th,td{ text-align:left; padding:9px 8px; border-bottom:1px solid #eeeeee; font-size:15.5px; }
   th{ font-size:12.5px; text-transform:uppercase; letter-spacing:.3px; color:var(--taupe); }
-  td.rank{ width:34px; color:var(--taupe); font-weight:700; }
+  td.rank{ width:48px; color:var(--taupe); font-weight:700; white-space:nowrap; }
+  td.rank .rnum{ font-weight:700; }
+  td.rank .mv{ font-size:10px; font-weight:800; margin-left:3px; }
+  td.rank .mv.up{ color:#1f8a4c; } td.rank .mv.dn{ color:#b3402e; } td.rank .mv.sm{ color:#c4c4c4; }
   td.pts{ text-align:right; font-weight:800; }
   td.alive{ text-align:center; font-weight:700; color:#161616; }
   td.champ{ font-size:12px; font-weight:600; color:#6e6e6e; text-align:center; }
@@ -73,6 +76,22 @@
   /* pick viewer modal */
   .modal{ position:fixed; inset:0; background:rgba(43,43,41,.45); display:none; align-items:center; justify-content:center; padding:18px; z-index:100; }
   .modal.show{ display:flex; }
+  .h2hbtn{ background:rgba(22,22,22,.05); border:1px solid rgba(22,22,22,.25); border-radius:7px; padding:6px 13px; font-size:13px; font-weight:700; color:#161616; cursor:pointer; margin-bottom:10px; }
+  .h2hbtn:hover{ background:#161616; color:#fff; border-color:#161616; }
+  .h2hpick{ display:flex; gap:10px; align-items:center; margin:6px 0 16px; }
+  .h2hpick select{ flex:1; min-width:0; padding:9px; border:1px solid #d7d7d7; border-radius:7px; font-size:14px; background:#fff; }
+  .h2hpick .vs{ font-weight:800; color:#9a9a9a; font-size:13px; }
+  .h2hrow{ display:grid; grid-template-columns:1fr 120px 1fr; gap:8px; align-items:center; padding:9px 0; border-bottom:1px solid #f0f0f0; }
+  .h2hrow .mid{ text-align:center; font-size:10px; text-transform:uppercase; letter-spacing:.4px; color:#9a9a9a; font-weight:700; }
+  .h2hrow .cell{ font-size:13px; }
+  .h2hrow .cell.b{ text-align:right; }
+  .h2hrow.head .cell{ font-size:15px; }
+  .h2hrow.big .cell{ font-size:16px; font-weight:800; }
+  .h2hrow.match .cell{ color:#1f8a4c; } .h2hrow.match .mid{ color:#1f8a4c; }
+  .ht{ display:inline-block; padding:2px 8px; margin:2px; border:1px solid #e2e2e2; border-radius:14px; font-size:12px; }
+  .ht.hit{ border-color:#1f8a4c; color:#1f8a4c; font-weight:700; background:rgba(31,138,76,.06); }
+  .h2hsum{ margin-top:14px; font-size:12.5px; color:#6e6e6e; background:#f6f6f6; border-radius:8px; padding:11px 13px; line-height:1.7; }
+  .h2hsum b{ color:#161616; }
   .modalcard{ background:#fff; border-radius:14px; max-width:1180px; width:96vw; max-height:90vh; overflow:auto; padding:22px 24px; }
   .modalcard h3{ font-family:'Outfit','Inter',sans-serif; font-size:22.5px; margin:0 0 2px; }
   .modalcard .ph{ color:var(--taupe); font-size:14px; margin-bottom:16px; }
@@ -169,6 +188,7 @@
       <div class="card">
         <h2>Standings</h2>
         <div class="empty" style="margin:-4px 0 10px">Tip: tap a player's <b style="color:#161616">name</b>, <b style="color:#161616">teams left</b>, or <b style="color:#161616">total</b> for a detailed breakdown.</div>
+        <button id="h2hOpen" class="h2hbtn" type="button">&#9876;&#65039; Compare two brackets</button>
         <div class="scrollx">
         <table class="standings">
           <thead>
@@ -270,6 +290,20 @@
   </div>
 </div>
 
+<div class="modal" id="h2hModal">
+  <div class="modalcard">
+    <h3>Head-to-head</h3>
+    <div class="ph">Compare any two brackets side by side.</div>
+    <div class="h2hpick">
+      <select id="h2hA"></select>
+      <span class="vs">vs</span>
+      <select id="h2hB"></select>
+    </div>
+    <div id="h2hBody"></div>
+    <button class="closebtn" id="h2hClose" type="button">Close</button>
+  </div>
+</div>
+
 <div class="paymodal-overlay" id="payModal">
   <div class="paymodal">
     <div class="paymoji">&#128181;</div>
@@ -290,6 +324,7 @@
   const DEADLINE_MS = 1781204400000; // June 11, 2026, 3:00 PM EDT
   const revealed = () => Date.now() > DEADLINE_MS;
   let me = null;
+  let rosterList = [];  // [{uid,name}] for the head-to-head selectors
 
   const deadlineStr = new Date(DEADLINE_MS).toLocaleString([], {weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
 
@@ -297,6 +332,52 @@
   $("btnEdit").addEventListener("click", ()=> location.href="index.html?edit=1");
   $("pmClose").addEventListener("click", ()=> $("pickModal").classList.remove("show"));
   $("pickModal").addEventListener("click", e=>{ if(e.target.id==="pickModal") $("pickModal").classList.remove("show"); });
+  $("h2hOpen").addEventListener("click", openH2H);
+  $("h2hClose").addEventListener("click", ()=> $("h2hModal").classList.remove("show"));
+  $("h2hModal").addEventListener("click", e=>{ if(e.target.id==="h2hModal") $("h2hModal").classList.remove("show"); });
+  $("h2hA").addEventListener("change", renderH2H);
+  $("h2hB").addEventListener("change", renderH2H);
+
+  function rosterName(uid){ const f=rosterList.find(x=>x.uid===uid); return f?f.name:"Player"; }
+  async function getPicksFor(uid){
+    if(picksMap[uid]) return picksMap[uid];
+    try{ const s=await getDoc(doc(db,"entries",uid)); if(s.exists()){ picksMap[uid]=s.data().picks; return picksMap[uid]; } }catch(e){}
+    return null;
+  }
+  function openH2H(){
+    if(!revealed()){ alert("Brackets become viewable after " + deadlineStr + "."); return; }
+    if(!rosterList.length){ return; }
+    const opts = rosterList.map(r=>'<option value="'+r.uid+'">'+escapeHtml(r.name)+'</option>').join('');
+    $("h2hA").innerHTML=opts; $("h2hB").innerHTML=opts;
+    if(me && rosterList.some(r=>r.uid===me.uid)) $("h2hA").value=me.uid;
+    const av=$("h2hA").value; const other=rosterList.find(r=>r.uid!==av); if(other) $("h2hB").value=other.uid;
+    $("h2hModal").classList.add("show");
+    renderH2H();
+  }
+  async function renderH2H(){
+    const uidA=$("h2hA").value, uidB=$("h2hB").value, body=$("h2hBody");
+    if(!uidA||!uidB){ body.innerHTML=""; return; }
+    if(uidA===uidB){ body.innerHTML='<div class="empty">Pick two different players.</div>'; return; }
+    body.innerHTML='<div class="loadingline">Loading…</div>';
+    const [pa,pb]=await Promise.all([getPicksFor(uidA),getPicksFor(uidB)]);
+    if(!pa||!pb){ body.innerHTML='<div class="empty">Couldn\'t load one of the brackets.</div>'; return; }
+    const sA=deriveSets(pa), sB=deriveSets(pb);
+    const nameA=rosterName(uidA), nameB=rosterName(uidB);
+    const chips=(list, other)=> [...list].map(t=> other.has(t) ? '<span class="ht hit">'+escapeHtml(t)+'</span>' : '<span class="ht">'+escapeHtml(t)+'</span>').join('');
+    const cnt=(a,b)=>{ const B=new Set(b); return [...a].filter(x=>B.has(x)).length; };
+    const champMatch = sA.champ && sA.champ===sB.champ;
+    const thirdMatch = sA.third && sA.third===sB.third;
+    const finA=new Set(sA.fin), finB=new Set(sB.fin), sfA=new Set(sA.sf), sfB=new Set(sB.sf);
+    let h='<div class="h2hgrid">';
+    h+='<div class="h2hrow head"><div class="cell a"><b>'+escapeHtml(nameA)+'</b></div><div class="mid"></div><div class="cell b"><b>'+escapeHtml(nameB)+'</b></div></div>';
+    h+='<div class="h2hrow big'+(champMatch?' match':'')+'"><div class="cell a">'+escapeHtml(sA.champ||'—')+'</div><div class="mid">🏆 Champion'+(champMatch?' ✓':'')+'</div><div class="cell b">'+escapeHtml(sB.champ||'—')+'</div></div>';
+    h+='<div class="h2hrow"><div class="cell a">'+chips(sA.fin,finB)+'</div><div class="mid">Finalists</div><div class="cell b">'+chips(sB.fin,finA)+'</div></div>';
+    h+='<div class="h2hrow"><div class="cell a">'+chips(sA.sf,sfB)+'</div><div class="mid">Semi-finalists</div><div class="cell b">'+chips(sB.sf,sfA)+'</div></div>';
+    h+='<div class="h2hrow big'+(thirdMatch?' match':'')+'"><div class="cell a">'+escapeHtml(sA.third||'—')+'</div><div class="mid">🥉 3rd place'+(thirdMatch?' ✓':'')+'</div><div class="cell b">'+escapeHtml(sB.third||'—')+'</div></div>';
+    h+='</div>';
+    h+='<div class="h2hsum">Shared picks — R32 <b>'+cnt(sA.r32,sB.r32)+'/32</b> · R16 <b>'+cnt(sA.r16,sB.r16)+'/16</b> · QF <b>'+cnt(sA.qf,sB.qf)+'/8</b> · SF <b>'+cnt(sA.sf,sB.sf)+'/4</b> · Final <b>'+cnt(sA.fin,sB.fin)+'/2</b></div>';
+    body.innerHTML=h;
+  }
 
   onAuthStateChanged(auth, (user)=>{
     if(!user){ location.href="index.html"; return; }
@@ -307,7 +388,7 @@
     $("content").style.display="block";
     if(revealed()){
       $("deadlineNote").textContent = "Picks are now public — click any name to view their bracket. Standings update automatically as games are played.";
-      $("pickHint").textContent = "Tip: click a player's name to see their full bracket.";
+      $("pickHint").textContent = "";
     } else {
       $("deadlineNote").textContent = "Picks lock and become public on " + deadlineStr + ". Until then, everyone's selections stay private.";
       $("pickHint").textContent = "Names become clickable to reveal picks after the deadline.";
@@ -372,6 +453,7 @@
         || String(a.displayName||a.username).localeCompare(String(b.displayName||b.username))
       );
       const body = $("standingsBody");
+      rosterList = rows.map(r=>({ uid:r.uid, name:r.displayName||r.username||"Player" }));
       if(rows.length===0){ body.innerHTML = '<tr><td colspan="12" class="empty">No entries yet — be the first to submit!</td></tr>'; return; }
       body.innerHTML = "";
       const showChamp = revealed();
@@ -391,10 +473,19 @@
           ? `<td class="alive"><button class="alivebtn" data-uid="${r.uid}" data-name="${name.replace(/"/g,'&quot;')}">${left}</button></td>`
           : `<td class="alive">${left}</td>`;
         const b = r.breakdown || {r32:0,r16:0,qf:0,sf:0,fin:0,champ:0,third:0};
+        // rank cell: number + movement since last publish
+        let mv = "";
+        if(typeof r.prevRank==="number"){
+          const d = r.prevRank-(i+1);
+          if(d>0) mv = `<span class="mv up">▲${d}</span>`;
+          else if(d<0) mv = `<span class="mv dn">▼${-d}</span>`;
+          else mv = `<span class="mv sm">–</span>`;
+        }
+        const rankCell = `<td class="rank"><span class="rnum">${i+1}</span>${mv}</td>`;
         const totCell = canView
           ? `<td class="pts" style="text-align:right"><button class="totbtn" data-uid="${r.uid}" data-name="${name.replace(/"/g,'&quot;')}">${r.points||0}</button></td>`
           : `<td class="pts" style="text-align:right">${r.points||0}</td>`;
-        tr.innerHTML = `<td class="rank">${i+1}</td><td>${nameCell}</td>${leftCell}<td class="champ">${escapeHtml(champ)}</td>`
+        tr.innerHTML = rankCell + `<td>${nameCell}</td>${leftCell}<td class="champ">${escapeHtml(champ)}</td>`
           + rc(b.r32,1) + rc(b.r16,2) + rc(b.qf,4) + rc(b.sf,8) + rc(b.fin,16) + bonus(b.champ,50) + bonus(b.third,5) + totCell;
         body.appendChild(tr);
       });
@@ -641,7 +732,10 @@
       let elim = eliminatedSet;
       try{ const es=await getDoc(doc(db,"meta","eliminated")); if(es.exists()) elim=new Set(es.data().teams||[]); }catch(e){}
       const entries = await getDocs(collection(db,"entries"));
-      const batch = writeBatch(db); let n=0;
+      // read prior ranks + names so we can show rank movement caused by this publish
+      let priorRank={}, nameMap={};
+      try{ const ps=await getDocs(collection(db,"players")); ps.forEach(s=>{ const d=s.data()||{}; if(typeof d.rank==="number") priorRank[s.id]=d.rank; nameMap[s.id]=d.displayName||d.username||s.id; }); }catch(e){}
+      const scored=[];
       entries.forEach(snap=>{
         const e=snap.data(); if(!e||!e.picks) return;
         const b=scoreEntry(e.picks, actualSets);
@@ -653,7 +747,21 @@
         const tbThird=(ds.third && actual.third && ds.third===actual.third)?1:0;
         // teams still active = this player's predicted knockout teams not yet eliminated
         const teamsLeft = [...ds.r32].filter(t=>!elim.has(t)).length;
-        batch.set(doc(db,"players",snap.id), {points:b.total, breakdown:b, tbChamp, tbGoals, tbThird, teamsLeft, scoredAt:serverTimestamp()}, {merge:true}); n++;
+        scored.push({ uid:snap.id, b, tbChamp, tbGoals, tbThird, teamsLeft });
+      });
+      // rank with the SAME comparator the standings uses, so positions match exactly
+      scored.sort((a,b)=>
+        (b.b.total||0)-(a.b.total||0)
+        || (b.tbChamp||0)-(a.tbChamp||0)
+        || (a.tbGoals)-(b.tbGoals)
+        || (b.tbThird||0)-(a.tbThird||0)
+        || String(nameMap[a.uid]||"").localeCompare(String(nameMap[b.uid]||""))
+      );
+      const batch = writeBatch(db); let n=0;
+      scored.forEach((s,i)=>{
+        const rank=i+1;
+        const prevRank = (priorRank[s.uid]!=null) ? priorRank[s.uid] : rank;  // first publish: no movement
+        batch.set(doc(db,"players",s.uid), {points:s.b.total, breakdown:s.b, tbChamp:s.tbChamp, tbGoals:s.tbGoals, tbThird:s.tbThird, teamsLeft:s.teamsLeft, rank, prevRank, scoredAt:serverTimestamp()}, {merge:true}); n++;
       });
       await batch.commit();
       st.textContent="Published ✓ scored "+n+" players"; st.style.color="#444444";
