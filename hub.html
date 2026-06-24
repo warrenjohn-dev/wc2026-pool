@@ -83,6 +83,17 @@
   .pk .k{ color:var(--taupe); }
   .seclbl{ font-size:12.5px; text-transform:uppercase; letter-spacing:.3px; color:var(--taupe); margin:14px 0 4px; font-weight:700; }
   .closebtn{ margin-top:16px; background:var(--ink); color:#fff; border:none; border-radius:8px; padding:10px 16px; font-weight:700; cursor:pointer; }
+  .paybar{ background:#eef7f0; border-bottom:1px solid #cfe6d6; color:#1f5130; text-align:center; font-size:13.5px; padding:9px 16px; }
+  .paybar b{ color:#143d24; }
+  .paymodal-overlay{ position:fixed; inset:0; background:rgba(43,43,41,.5); display:none; align-items:center; justify-content:center; padding:18px; z-index:200; }
+  .paymodal-overlay.show{ display:flex; }
+  .paymodal{ background:#fff; border-radius:16px; max-width:380px; width:100%; padding:26px 24px; text-align:center; box-shadow:0 20px 55px rgba(0,0,0,.22); }
+  .paymodal .paymoji{ font-size:34px; line-height:1; margin-bottom:6px; }
+  .paymodal h3{ font-family:'Outfit','Inter',sans-serif; font-size:21px; margin:0 0 10px; color:#161616; }
+  .paymodal p{ font-size:14.5px; color:#4a4a4a; margin:0 0 10px; line-height:1.5; }
+  .paymodal .payemail{ font-weight:800; font-size:16px; color:#1f5130; background:#eef7f0; border:1px solid #cfe6d6; border-radius:9px; padding:11px; margin:12px 0 18px; word-break:break-all; }
+  .paymodal .paybtn{ background:#161616; color:#fff; border:none; border-radius:9px; padding:12px 26px; font-weight:700; font-size:15px; cursor:pointer; width:100%; }
+  .paymodal .paybtn:hover{ background:#000; }
   .loadingline{ color:var(--taupe); font-size:14.5px; padding:30px 0; text-align:center; }
   .rndclear{ font-size:10.5px; font-weight:700; color:#6e6e6e; background:#f0f0f0; border:1px solid #d7d7d7; border-radius:6px; padding:3px 9px; cursor:pointer; }
   .rndclear:hover{ color:#161616; border-color:#161616; }
@@ -146,6 +157,8 @@
     <button class="btn-out" id="btnOut" type="button">Log out</button>
   </div>
 </nav>
+
+<div id="payBanner" class="paybar">&#128181; <b>$20 buy-in</b> &mdash; pay Warren in cash or Interac e-transfer to <b>warrenjohn.a@gmail.com</b></div>
 
 <div class="wrap">
   <div id="loading" class="loadingline">Loading the hub…</div>
@@ -223,6 +236,19 @@
       </div>
 
       <div style="margin-top:20px; padding-top:16px; border-top:1px solid #e2e2e2;">
+        <h3 style="margin:0 0 6px; font-family:'Outfit','Inter',sans-serif; font-size:18px; color:#161616;">Payments <span style="font-weight:600;color:#9a9a9a;font-size:13px">— private, only you can see this</span></h3>
+        <p style="font-size:14px; color:#6e6e6e; margin:0 0 12px">
+          Track the <b>$20 buy-in</b> per player (cash or e-transfer to warrenjohn.a@gmail.com). This list is stored privately and is <b>never visible to other players</b>. Set each person's status, then Save.
+        </p>
+        <div id="payList" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:8px;"></div>
+        <div style="margin-top:14px; display:flex; gap:14px; align-items:center; flex-wrap:wrap">
+          <button id="paySave" style="background:#161616;color:#fff;border:none;border-radius:8px;padding:11px 18px;font-weight:700;cursor:pointer">Save payments</button>
+          <span id="paySummary" style="font-size:14px;font-weight:700;color:#161616"></span>
+          <span id="payStatus" style="font-size:14px;font-weight:700;color:#6e6e6e"></span>
+        </div>
+      </div>
+
+      <div style="margin-top:20px; padding-top:16px; border-top:1px solid #e2e2e2;">
         <h3 style="margin:0 0 6px; font-family:'Outfit','Inter',sans-serif; font-size:18px; color:#161616;">Pick audit</h3>
         <p style="font-size:14px; color:#6e6e6e; margin:0 0 10px">
           Checks every participant for a <b>complete</b> entry — 12 groups, 8 wildcards, full knockout (R16→Final), Champion, 3rd-place bonus, tie-breaker — and flags any <b>inconsistent</b> bracket (e.g. a team advanced that isn't in the round below it). Reads everyone's saved picks.
@@ -243,6 +269,17 @@
     <div class="ph" id="pmSub"></div>
     <div id="pmBody"></div>
     <button class="closebtn" id="pmClose" type="button">Close</button>
+  </div>
+</div>
+
+<div class="paymodal-overlay" id="payModal">
+  <div class="paymodal">
+    <div class="paymoji">&#128181;</div>
+    <h3>Pool buy-in &mdash; $20</h3>
+    <p>Don&rsquo;t forget to settle your <b>$20 buy-in</b> with Warren.</p>
+    <p style="margin-bottom:6px">Pay by <b>cash</b>, or send an <b>Interac e-transfer</b> to:</p>
+    <div class="payemail">warrenjohn.a@gmail.com</div>
+    <button class="paybtn" id="payOk" type="button">Got it</button>
   </div>
 </div>
 
@@ -279,7 +316,9 @@
     }
     loadChampions().then(startStandings);
     initAdmin(user);
+    try{ if(!sessionStorage.getItem("wc_payseen")){ $("payModal").classList.add("show"); } }catch(e){ $("payModal").classList.add("show"); }
   });
+  $("payOk").addEventListener("click", ()=>{ $("payModal").classList.remove("show"); try{ sessionStorage.setItem("wc_payseen","1"); }catch(e){} });
 
   /* Recompute MY completeness from MY own entry and update MY standings flag — keeps status honest without admin action. */
   function entryComplete(p){
@@ -627,6 +666,48 @@
     $("admAudit").addEventListener("click", auditPicks);
     $("elimSave").addEventListener("click", saveEliminations);
     $("elimClear").addEventListener("click", ()=>{ document.querySelectorAll(".elimck").forEach(c=>c.checked=false); });
+    $("paySave").addEventListener("click", savePayments);
+    loadPayments();
+  }
+
+  let payNames = [];  // [{uid, name}] for the payments panel
+  async function loadPayments(){
+    let status={};
+    try{ const p=await getDoc(doc(db,"meta","payments")); if(p.exists()) status=p.data().status||{}; }catch(e){}
+    try{
+      const psnap=await getDocs(collection(db,"players"));
+      payNames=[]; psnap.forEach(s=>{ const d=s.data()||{}; payNames.push({ uid:s.id, name:d.displayName||d.username||s.id }); });
+      payNames.sort((a,b)=> a.name.localeCompare(b.name));
+    }catch(e){ console.error(e); }
+    renderPayments(status);
+  }
+  function renderPayments(status){
+    const el=$("payList"); if(!el) return;
+    if(!payNames.length){ el.innerHTML='<div class="empty">No players yet.</div>'; return; }
+    el.innerHTML = payNames.map(p=>{
+      const v=status[p.uid]||"";
+      const opt=(val,lbl)=>'<option value="'+val+'"'+(v===val?" selected":"")+'>'+lbl+'</option>';
+      return '<div style="display:flex;align-items:center;gap:8px;border:1px solid #eee;border-radius:8px;padding:7px 10px">'
+        + '<span style="flex:1;font-size:13.5px;font-weight:600;color:#161616;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(p.name)+'</span>'
+        + '<select class="payck" data-uid="'+p.uid+'" style="padding:6px 8px;border:1px solid #d7d7d7;border-radius:6px;font-size:13px">'
+        + opt("","Unpaid")+opt("cash","Cash")+opt("etransfer","E-transfer")+'</select></div>';
+    }).join('');
+    updatePaySummary();
+    el.querySelectorAll(".payck").forEach(s=> s.addEventListener("change", updatePaySummary));
+  }
+  function updatePaySummary(){
+    const sels=[...document.querySelectorAll(".payck")];
+    const paid=sels.filter(s=>s.value).length;
+    $("paySummary").textContent = paid+" of "+sels.length+" paid · $"+(paid*20)+" collected";
+  }
+  async function savePayments(){
+    const st=$("payStatus"); st.textContent="Saving…"; st.style.color="#6e6e6e";
+    const status={};
+    document.querySelectorAll(".payck").forEach(s=>{ if(s.value) status[s.dataset.uid]=s.value; });
+    try{
+      await setDoc(doc(db,"meta","payments"), { status, updatedAt:serverTimestamp() }, { merge:false });
+      st.textContent="Saved ✓"; st.style.color="#444444";
+    }catch(err){ console.error(err); st.textContent="Error: "+(err.message||err); st.style.color="#b3402e"; }
   }
 
   function renderElimGrid(elimSet){
