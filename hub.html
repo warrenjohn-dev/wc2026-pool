@@ -632,7 +632,9 @@
     const L=half(LEFT_R32), R=half(RIGHT_R32);
     return {L,R, final:{teams:[L.sfm.win,R.sfm.win], win:adv["bx-CHAMP"]||""}, champ:adv["bx-CHAMP"]||"", third:p.third||"", tiegoals:p.tiegoals};
   }
-  function bkRow(name, state){ const c=state==="win"?"bk-team bk-win":(state==="lose"?"bk-team bk-lose":"bk-team"); return '<div class="'+c+'"><span>'+escapeHtml(name||"—")+'</span></div>'; }
+  const FLAGS={"Mexico":"🇲🇽","South Korea":"🇰🇷","South Africa":"🇿🇦","Czechia":"🇨🇿","Canada":"🇨🇦","Switzerland":"🇨🇭","Qatar":"🇶🇦","Bosnia-Herzegovina":"🇧🇦","Brazil":"🇧🇷","Morocco":"🇲🇦","Scotland":"🏴󠁧󠁢󠁳󠁣󠁴󠁿","Haiti":"🇭🇹","USA":"🇺🇸","Paraguay":"🇵🇾","Australia":"🇦🇺","Turkiye":"🇹🇷","Germany":"🇩🇪","Ecuador":"🇪🇨","Ivory Coast":"🇨🇮","Curacao":"🇨🇼","Netherlands":"🇳🇱","Japan":"🇯🇵","Tunisia":"🇹🇳","Sweden":"🇸🇪","Belgium":"🇧🇪","Iran":"🇮🇷","Egypt":"🇪🇬","New Zealand":"🇳🇿","Spain":"🇪🇸","Uruguay":"🇺🇾","Saudi Arabia":"🇸🇦","Cape Verde":"🇨🇻","France":"🇫🇷","Senegal":"🇸🇳","Norway":"🇳🇴","Iraq":"🇮🇶","Argentina":"🇦🇷","Austria":"🇦🇹","Algeria":"🇩🇿","Jordan":"🇯🇴","Portugal":"🇵🇹","Colombia":"🇨🇴","Uzbekistan":"🇺🇿","DR Congo":"🇨🇩","England":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Croatia":"🇭🇷","Panama":"🇵🇦","Ghana":"🇬🇭"};
+  function flagOf(name){ return FLAGS[name] ? FLAGS[name]+" " : ""; }
+  function bkRow(name, state){ const c=state==="win"?"bk-team bk-win":(state==="lose"?"bk-team bk-lose":"bk-team"); return '<div class="'+c+'"><span>'+(name?flagOf(name)+escapeHtml(name):"—")+'</span></div>'; }
   function bkMatch(m){ const a=m.teams[0],b=m.teams[1]; let sa="na",sb="na"; if(m.win){ sa=(m.win===a)?"win":"lose"; sb=(m.win===b)?"win":"lose"; } return '<div class="bk-match">'+bkRow(a,sa)+bkRow(b,sb)+'</div>'; }
   function bkCol(head, matches){ return '<div class="bk-col"><div class="bk-head">'+head+'</div><div class="bk-body">'+matches.map(bkMatch).join("")+'</div></div>'; }
   function bracketHTML(p){
@@ -641,8 +643,8 @@
     let fsa="na",fsb="na"; if(d.final.win){ fsa=(d.final.win===fa)?"win":"lose"; fsb=(d.final.win===fb)?"win":"lose"; }
     const center='<div class="bk-center">'+
       '<div class="bk-final"><div class="bk-fh">Final</div>'+bkRow(fa,fsa)+bkRow(fb,fsb)+'</div>'+
-      '<div class="bk-champ"><div class="bk-ct">🏆 Champion</div><div class="bk-cn">'+escapeHtml(d.champ||"—")+'</div></div>'+
-      (d.third?'<div class="bk-third">🥉 3rd place<br><b>'+escapeHtml(d.third)+'</b></div>':'')+
+      '<div class="bk-champ"><div class="bk-ct">🏆 Champion</div><div class="bk-cn">'+(d.champ?flagOf(d.champ)+escapeHtml(d.champ):"—")+'</div></div>'+
+      '<div class="bk-third">🥉 3rd place<br><b>'+(d.third?flagOf(d.third)+escapeHtml(d.third):"—")+'</b></div>'+
       (d.tiegoals!==""&&d.tiegoals!=null?'<div class="bk-tie">Final goals: '+escapeHtml(String(d.tiegoals))+'</div>':'')+
     '</div>';
     return '<div class="bk-wrap"><div class="bk">'+
@@ -666,7 +668,7 @@
       (res.fin||[]).forEach((t,i)=>{ if(t) adv["FIN-"+i]=t; });
       if(res.champ) adv["bx-CHAMP"]=res.champ;
     }
-    return { groups, wild, adv, third:(res&&res.third)||"", tiegoals:(res&&res.finalGoals!=null?res.finalGoals:"") };
+    return { groups, wild, adv, third:(res&&res.third)||"", tiegoals:(res&&res.champ&&res.finalGoals!=null?res.finalGoals:"") };
   }
   function renderOfficialBracket(){
     const host=$("officialBracket"); if(!host) return;
