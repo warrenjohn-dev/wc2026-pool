@@ -676,7 +676,13 @@
       host.innerHTML='<div class="empty">The bracket appears once group-stage results are entered'+(me&&me.email&&me.email.toLowerCase()===ADMIN_EMAIL?' in the admin panel below':'')+'.</div>';
       return;
     }
-    host.innerHTML = bracketHTML(officialPicksObject(groupResults, actualResults));
+    let html = bracketHTML(officialPicksObject(groupResults, actualResults));
+    const nThirds=(groupResults.thirds||[]).length;
+    if(nThirds!==8){
+      const isAdm = me && me.email && me.email.toLowerCase()===ADMIN_EMAIL;
+      html += '<div class="empty" style="margin-top:10px">The Round-of-32 third-place qualifiers appear only once all <b>8</b> best third-place teams are marked'+(isAdm?' in the Group stage results below':'')+' — currently '+nThirds+' of 8. (FIFA decides each third\u2019s slot from the full set of 8.)</div>';
+    }
+    host.innerHTML = html;
   }
 
   function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
