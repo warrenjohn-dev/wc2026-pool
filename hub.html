@@ -207,6 +207,12 @@
       </div>
 
       <div class="card">
+        <h2>Official bracket</h2>
+        <div class="sub" id="officialSub">The real tournament bracket, filling in as results are published.</div>
+        <div class="scrollx"><div id="officialBracket"><div class="empty">The bracket appears once group-stage results are entered.</div></div></div>
+      </div>
+
+      <div class="card">
         <h2>World Cup — Scores &amp; Schedule</h2>
         <iframe src="https://www.sportbusy.com/embed/world-cup?theme=2" title="World Cup 2026 scores and schedule"
           style="width:100%; border:none; height:520px; border-radius:12px; overflow:hidden; display:block; margin-top:8px" loading="lazy"></iframe>
@@ -227,6 +233,20 @@
         Tick the teams that <b>advanced</b> at each stage. Each round is built from the one above it, so work top to bottom.
         Enter the Final's total goals last, then <b>Publish</b> to recompute everyone's points.
       </p>
+
+      <div style="margin:0 0 20px; padding:0 0 18px; border-bottom:1px solid #e2e2e2;">
+        <h3 style="margin:0 0 6px; font-family:'Outfit','Inter',sans-serif; font-size:18px; color:#161616;">Group stage results <span style="font-weight:600;color:#9a9a9a;font-size:13px">— builds the Official bracket</span></h3>
+        <p style="font-size:14px; color:#6e6e6e; margin:0 0 12px">
+          For each group set <b>1st / 2nd / 3rd</b> (4th is automatic), then tick the <b>8 best third-place teams</b> that advance as wildcards. This places teams into the Round of 32; knockout winners come from the round checklists below.
+        </p>
+        <div id="grpGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:10px;"></div>
+        <div style="margin-top:14px; display:flex; gap:14px; align-items:center; flex-wrap:wrap">
+          <button id="grpSave" style="background:#161616;color:#fff;border:none;border-radius:8px;padding:11px 18px;font-weight:700;cursor:pointer">Save group results</button>
+          <span id="grpThirdCount" style="font-size:13px;font-weight:700;color:#6e6e6e"></span>
+          <span id="grpStatus" style="font-size:14px;font-weight:700;color:#6e6e6e"></span>
+        </div>
+      </div>
+
       <div id="adminRounds"></div>
       <div style="margin-top:14px; display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end">
         <div>
@@ -446,6 +466,7 @@
   let picksMap = {};        // uid -> full picks object (for the per-player points summary)
   let actualResults = null; // published actual results (meta/results)
   let eliminatedSet = new Set(); // teams the admin has marked knocked out (meta/eliminated) — drives Teams left
+  let groupResults = null;       // official group-stage results (meta/groupResults) — drives the Official bracket
   async function loadChampions(){
     if(!revealed()) return;
     try{
@@ -455,6 +476,8 @@
     }catch(e){ /* not readable yet (pre-deadline) — leave empty */ }
     try{ const r=await getDoc(doc(db,"meta","results")); if(r.exists()) actualResults=r.data(); }catch(e){}
     try{ const el=await getDoc(doc(db,"meta","eliminated")); if(el.exists()) eliminatedSet=new Set(el.data().teams||[]); }catch(e){}
+    try{ const gr=await getDoc(doc(db,"meta","groupResults")); if(gr.exists()) groupResults=gr.data(); }catch(e){}
+    renderOfficialBracket();
   }
   function startStandings(){
     onSnapshot(collection(db, "players"), (snap)=>{
@@ -612,7 +635,7 @@
   function bkRow(name, state){ const c=state==="win"?"bk-team bk-win":(state==="lose"?"bk-team bk-lose":"bk-team"); return '<div class="'+c+'"><span>'+escapeHtml(name||"—")+'</span></div>'; }
   function bkMatch(m){ const a=m.teams[0],b=m.teams[1]; let sa="na",sb="na"; if(m.win){ sa=(m.win===a)?"win":"lose"; sb=(m.win===b)?"win":"lose"; } return '<div class="bk-match">'+bkRow(a,sa)+bkRow(b,sb)+'</div>'; }
   function bkCol(head, matches){ return '<div class="bk-col"><div class="bk-head">'+head+'</div><div class="bk-body">'+matches.map(bkMatch).join("")+'</div></div>'; }
-  function renderPicks(p){
+  function bracketHTML(p){
     const d=buildBracketData(p);
     const fa=d.final.teams[0], fb=d.final.teams[1];
     let fsa="na",fsb="na"; if(d.final.win){ fsa=(d.final.win===fa)?"win":"lose"; fsb=(d.final.win===fb)?"win":"lose"; }
@@ -620,13 +643,38 @@
       '<div class="bk-final"><div class="bk-fh">Final</div>'+bkRow(fa,fsa)+bkRow(fb,fsb)+'</div>'+
       '<div class="bk-champ"><div class="bk-ct">🏆 Champion</div><div class="bk-cn">'+escapeHtml(d.champ||"—")+'</div></div>'+
       (d.third?'<div class="bk-third">🥉 3rd place<br><b>'+escapeHtml(d.third)+'</b></div>':'')+
-      (d.tiegoals!==""&&d.tiegoals!=null?'<div class="bk-tie">Tie-breaker goals: '+escapeHtml(String(d.tiegoals))+'</div>':'')+
+      (d.tiegoals!==""&&d.tiegoals!=null?'<div class="bk-tie">Final goals: '+escapeHtml(String(d.tiegoals))+'</div>':'')+
     '</div>';
-    $("pmBody").innerHTML='<div class="bk-wrap"><div class="bk">'+
+    return '<div class="bk-wrap"><div class="bk">'+
       bkCol("Round of 32", d.L.r32m)+bkCol("Round of 16", d.L.r16m)+bkCol("Quarter-finals", d.L.qfm)+bkCol("Semi-final",[d.L.sfm])+
       center+
       bkCol("Semi-final",[d.R.sfm])+bkCol("Quarter-finals", d.R.qfm)+bkCol("Round of 16", d.R.r16m)+bkCol("Round of 32", d.R.r32m)+
     '</div></div>';
+  }
+  function renderPicks(p){ $("pmBody").innerHTML = bracketHTML(p); }
+
+  // Build a picks-shaped object from the OFFICIAL results so the same engine draws the real bracket
+  function officialPicksObject(gr, res){
+    const groups={}, wild={}, adv={};
+    const pos=(gr&&gr.pos)||{};
+    Object.keys(pos).forEach(L=>{ const a=pos[L]||[]; groups[L]={g1:a[0]||"", g2:a[1]||""}; });
+    ((gr&&gr.thirds)||[]).forEach(L=>{ const a=pos[L]||[]; if(a[2]) wild[L]={adv:true, team:a[2]}; });
+    if(res){
+      (res.r16||[]).forEach((t,i)=>{ if(t) adv["16-"+i]=t; });
+      (res.qf ||[]).forEach((t,i)=>{ if(t) adv["QF-"+i]=t; });
+      (res.sf ||[]).forEach((t,i)=>{ if(t) adv["SF-"+i]=t; });
+      (res.fin||[]).forEach((t,i)=>{ if(t) adv["FIN-"+i]=t; });
+      if(res.champ) adv["bx-CHAMP"]=res.champ;
+    }
+    return { groups, wild, adv, third:(res&&res.third)||"", tiegoals:(res&&res.finalGoals!=null?res.finalGoals:"") };
+  }
+  function renderOfficialBracket(){
+    const host=$("officialBracket"); if(!host) return;
+    if(!groupResults || !groupResults.pos || !Object.keys(groupResults.pos).length){
+      host.innerHTML='<div class="empty">The bracket appears once group-stage results are entered'+(me&&me.email&&me.email.toLowerCase()===ADMIN_EMAIL?' in the admin panel below':'')+'.</div>';
+      return;
+    }
+    host.innerHTML = bracketHTML(officialPicksObject(groupResults, actualResults));
   }
 
   function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -798,6 +846,42 @@
     $("elimClear").addEventListener("click", ()=>{ document.querySelectorAll(".elimck").forEach(c=>c.checked=false); });
     $("paySave").addEventListener("click", savePayments);
     loadPayments();
+    try{ const gr=await getDoc(doc(db,"meta","groupResults")); if(gr.exists()) groupResults=gr.data(); }catch(e){}
+    renderGroupResultsUI(groupResults);
+    $("grpSave").addEventListener("click", saveGroupResults);
+  }
+
+  function renderGroupResultsUI(gr){
+    const host=$("grpGrid"); if(!host) return;
+    const pos=(gr&&gr.pos)||{}; const thirds=new Set((gr&&gr.thirds)||[]);
+    let html="";
+    Object.keys(GROUPS).forEach(L=>{
+      const teams=GROUPS[L], cur=pos[L]||[];
+      const sel=(slot,val)=>{ let o='<option value="">—</option>'; teams.forEach(t=>{ o+='<option value="'+escapeHtml(t)+'"'+(val===t?' selected':'')+'>'+escapeHtml(t)+'</option>'; }); return '<select class="grpsel" data-g="'+L+'" data-slot="'+slot+'" style="flex:1;min-width:0;padding:6px 8px;border:1px solid #d7d7d7;border-radius:6px;font-size:13px">'+o+'</select>'; };
+      const rowS=(lbl,slot,val)=>'<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px"><span style="font-size:11px;color:#6e6e6e;width:26px">'+lbl+'</span>'+sel(slot,val)+'</div>';
+      html += '<div style="border:1px solid #eee;border-radius:8px;padding:9px 11px">'
+        + '<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#9a9a9a;letter-spacing:.4px;margin-bottom:6px">Group '+L+'</div>'
+        + rowS('1st',0,cur[0]) + rowS('2nd',1,cur[1]) + rowS('3rd',2,cur[2])
+        + '<label style="display:flex;align-items:center;gap:7px;font-size:12.5px;margin-top:5px;cursor:pointer"><input type="checkbox" class="grpthird" data-g="'+L+'"'+(thirds.has(L)?' checked':'')+'> 3rd-place advances</label>'
+        + '</div>';
+    });
+    host.innerHTML=html;
+    host.querySelectorAll(".grpthird").forEach(c=>c.addEventListener("change", updateGrpThirdCount));
+    updateGrpThirdCount();
+  }
+  function updateGrpThirdCount(){ const n=document.querySelectorAll(".grpthird:checked").length; const el=$("grpThirdCount"); if(el){ el.textContent=n+" of 8 thirds marked"; el.style.color=(n===8?"#1f8a4c":"#b3402e"); } }
+  async function saveGroupResults(){
+    const st=$("grpStatus"); st.textContent="Saving…"; st.style.color="#6e6e6e";
+    const pos={};
+    document.querySelectorAll(".grpsel").forEach(s=>{ const g=s.dataset.g, slot=+s.dataset.slot; if(!pos[g]) pos[g]=["","",""]; pos[g][slot]=s.value; });
+    const thirds=[...document.querySelectorAll(".grpthird:checked")].map(c=>c.dataset.g);
+    try{
+      await setDoc(doc(db,"meta","groupResults"), { pos, thirds, updatedAt:serverTimestamp() }, { merge:false });
+      groupResults={ pos, thirds };
+      renderOfficialBracket();
+      st.textContent = "Saved ✓" + (thirds.length!==8 ? " — note: "+thirds.length+"/8 thirds marked (R32 third-place slots fill in at exactly 8)" : "");
+      st.style.color = (thirds.length===8 ? "#444444" : "#b3402e");
+    }catch(err){ console.error(err); st.textContent="Error: "+(err.message||err); st.style.color="#b3402e"; }
   }
 
   let payNames = [];  // [{uid, name}] for the payments panel
