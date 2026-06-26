@@ -96,6 +96,15 @@
   .h2hlegend{ font-size:11.5px; color:#6e6e6e; margin-bottom:12px; display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
   #h2hBody{ max-height:58vh; overflow-y:auto; }
   .cmatch{ border-bottom:1px solid #f0f0f0; }
+  .smatch{ border-bottom:1px solid #f0f0f0; }
+  .ssec{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#9a9a9a; margin:18px 0 2px; }
+  .ssec:first-child{ margin-top:2px; }
+  .srow{ display:grid; grid-template-columns:108px 1fr auto; gap:14px; align-items:center; padding:10px 4px; }
+  .sdt{ font-size:11px; color:#9a9a9a; } .sdt b{ display:block; color:#161616; font-size:12.5px; }
+  .steams div{ font-size:14px; font-weight:600; padding:1px 0; }
+  .steams .tbd{ color:#bbb; font-weight:500; }
+  .steams .smine{ font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; color:#1f8a4c; background:#e9f5ee; border-radius:10px; padding:2px 7px; margin-left:8px; white-space:nowrap; }
+  .stag{ text-align:right; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:#9a9a9a; } .stag span{ display:block; font-weight:600; text-transform:none; letter-spacing:0; color:#bbb; font-size:11px; margin-top:2px; }
   .crow{ display:grid; grid-template-columns:108px 1fr auto; gap:14px; align-items:start; padding:11px 4px 6px; }
   .cmatch .cdt{ cursor:pointer; user-select:none; }
   .cmatch .mchev{ font-size:9px; color:#bbb; display:inline-block; transition:transform .15s; }
@@ -241,15 +250,15 @@
       </div>
 
       <div class="card">
-        <h2>Round of 32 Matchups</h2>
-        <div class="sub">Each Round-of-32 match — tap a date to open it. Your own pick is highlighted; tap “Backers (N)” to see who else is on each team.</div>
-        <div id="cheerList"><div class="empty">Loading…</div></div>
+        <h2>Match Schedule</h2>
+        <div class="sub">Every remaining match — the last group games plus the full knockout path, all times ET. Knockout teams fill in as the bracket resolves.</div>
+        <div id="schedList"><div class="empty">Loading…</div></div>
       </div>
 
       <div class="card">
-        <h2>World Cup — Scores &amp; Schedule</h2>
-        <iframe src="https://www.sportbusy.com/embed/world-cup?theme=2" title="World Cup 2026 scores and schedule"
-          style="width:100%; border:none; height:520px; border-radius:12px; overflow:hidden; display:block; margin-top:8px" loading="lazy"></iframe>
+        <h2>Round of 32 Matchups</h2>
+        <div class="sub">Each Round-of-32 match — tap a date to open it. Your own pick is highlighted; tap “Backers (N)” to see who else is on each team.</div>
+        <div id="cheerList"><div class="empty">Loading…</div></div>
       </div>
 
       <div class="card" style="grid-column:1 / -1">
@@ -512,6 +521,7 @@
     try{ const el=await getDoc(doc(db,"meta","eliminated")); if(el.exists()) eliminatedSet=new Set(el.data().teams||[]); }catch(e){}
     try{ const gr=await getDoc(doc(db,"meta","groupResults")); if(gr.exists()) groupResults=gr.data(); }catch(e){}
     renderOfficialBracket();
+    renderSchedule();
   }
   function startStandings(){
     onSnapshot(collection(db, "players"), (snap)=>{
@@ -784,6 +794,44 @@
     return out.sort((a,b)=> ((me&&a===me.uid)?0:1)-((me&&b===me.uid)?0:1) || rosterName(a).localeCompare(rosterName(b)));
   }
   const VISIBLE_ROUNDS=["Round of 32"];   // which rounds show in the panel (add "Round of 16", etc. to reveal more)
+  // Remaining group-stage fixtures (Jun 26–27, 2026), ET
+  const GROUP_FIXTURES=[
+    {date:"Fri Jun 26",time:"3:00 PM ET",venue:"Boston",tag:"Group I",teams:["Norway","France"]},
+    {date:"Fri Jun 26",time:"3:00 PM ET",venue:"Toronto",tag:"Group I",teams:["Senegal","Iraq"]},
+    {date:"Fri Jun 26",time:"8:00 PM ET",venue:"Houston",tag:"Group H",teams:["Cape Verde","Saudi Arabia"]},
+    {date:"Fri Jun 26",time:"8:00 PM ET",venue:"Guadalajara",tag:"Group H",teams:["Uruguay","Spain"]},
+    {date:"Fri Jun 26",time:"11:00 PM ET",venue:"Seattle",tag:"Group G",teams:["Egypt","Iran"]},
+    {date:"Fri Jun 26",time:"11:00 PM ET",venue:"Vancouver",tag:"Group G",teams:["New Zealand","Belgium"]},
+    {date:"Sat Jun 27",time:"5:00 PM ET",venue:"New York/NJ",tag:"Group L",teams:["Panama","England"]},
+    {date:"Sat Jun 27",time:"5:00 PM ET",venue:"Philadelphia",tag:"Group L",teams:["Croatia","Ghana"]},
+    {date:"Sat Jun 27",time:"7:30 PM ET",venue:"Miami",tag:"Group K",teams:["Colombia","Portugal"]},
+    {date:"Sat Jun 27",time:"7:30 PM ET",venue:"Atlanta",tag:"Group K",teams:["DR Congo","Uzbekistan"]},
+    {date:"Sat Jun 27",time:"10:00 PM ET",venue:"Kansas City",tag:"Group J",teams:["Algeria","Austria"]},
+    {date:"Sat Jun 27",time:"10:00 PM ET",venue:"Dallas",tag:"Group J",teams:["Jordan","Argentina"]}
+  ];
+  function renderSchedule(){
+    const host=$("schedList"); if(!host) return;
+    const S = (me && picksMap[me.uid]) ? deriveSets(picksMap[me.uid]) : null;
+    const setFor=(round)=>{ if(!S) return null;
+      return round==="Group"?S.r32 : round==="Round of 32"?S.r16 : round==="Round of 16"?S.qf
+           : round==="Quarter-final"?S.sf : round==="Semi-final"?S.fin
+           : round==="Final"?new Set(S.champ?[S.champ]:[]) : round==="3rd place"?new Set(S.third?[S.third]:[]) : null; };
+    const teamCell=(t,pickSet)=>{
+      if(!t) return '<div><span class="tbd">TBD</span></div>';
+      const mine = pickSet && pickSet.has(t);
+      return '<div>'+flagOf(t)+escapeHtml(t)+(mine?'<span class="smine">✓ your pick</span>':'')+'</div>';
+    };
+    const rowHTML=(r,pickSet)=>'<div class="smatch"><div class="srow">'
+      +'<div class="sdt"><b>'+r.date+'</b>'+r.time+'</div>'
+      +'<div class="steams">'+teamCell(r.teams[0],pickSet)+teamCell(r.teams[1],pickSet)+'</div>'
+      +'<div class="stag">'+escapeHtml(r.tag)+'<span>'+escapeHtml(r.venue)+'</span></div></div></div>';
+    const gset=setFor("Group");
+    let html='<div class="ssec">Group Stage · remaining</div>'
+      + GROUP_FIXTURES.map(g=>rowHTML(g, gset)).join('')
+      + '<div class="ssec">Knockout Stage</div>'
+      + officialMatches().map(m=>rowHTML({date:m.date,time:m.time,venue:m.venue,tag:m.round,teams:m.teams}, setFor(m.round))).join('');
+    host.innerHTML=html;
+  }
   function renderCheer(){
     const host=$("cheerList"); if(!host) return;
     const matches=officialMatches().filter(m=>VISIBLE_ROUNDS.includes(m.round));
@@ -1026,6 +1074,7 @@
       await setDoc(doc(db,"meta","groupResults"), { pos, thirds, updatedAt:serverTimestamp() }, { merge:false });
       groupResults={ pos, thirds };
       renderOfficialBracket();
+      renderSchedule();
       st.textContent = "Saved ✓" + (thirds.length!==8 ? " — note: "+thirds.length+"/8 thirds marked (R32 third-place slots fill in at exactly 8)" : "");
       st.style.color = (thirds.length===8 ? "#444444" : "#b3402e");
     }catch(err){ console.error(err); st.textContent="Error: "+(err.message||err); st.style.color="#b3402e"; }
