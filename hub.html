@@ -112,6 +112,10 @@
   .gvb{ flex:1; padding:8px 6px; border:1px solid #d7d7d7; border-radius:7px; background:#fff; font-size:12.5px; font-weight:700; cursor:pointer; }
   .gvb:hover{ border-color:#161616; }
   .gvb.on{ background:#161616; color:#fff; border-color:#161616; }
+  .gvoted{ font-size:12.5px; color:#6e6e6e; font-weight:600; display:flex; align-items:center; gap:8px; padding:2px 0; }
+  .gvoted b{ color:#161616; }
+  .gvchange{ margin-left:auto; background:none; border:none; color:#1f8a4c; font-weight:700; font-size:12px; cursor:pointer; padding:0; text-decoration:underline; }
+  .gvbreak{ font-size:11.5px; color:#9a9a9a; margin-top:5px; }
   .spager{ display:flex; gap:8px; justify-content:center; margin-top:16px; }
   .spbtn{ padding:7px 15px; border:1px solid #d7d7d7; border-radius:8px; background:#fff; font-size:12.5px; font-weight:700; cursor:pointer; color:#6e6e6e; }
   .spbtn:hover{ border-color:#161616; }
@@ -265,7 +269,7 @@
 
       <div class="card" id="matchupsCard">
         <h2>Round of 32 Matchups</h2>
-        <div class="sub">Each Round-of-32 match — tap a date to open it. Your own pick is highlighted; tap “Backers (N)” to see who else is on each team.</div>
+        <div class="sub">Each Round-of-32 match — your own pick is highlighted; tap “Backers (N)” to see who else is on each team.</div>
         <div id="cheerList"><div class="empty">Loading…</div></div>
       </div>
 
@@ -840,6 +844,7 @@
     list.forEach(g=> renderGroupVote(g.id));
     if(!host._gwired){ host._gwired=true; host.addEventListener("click", e=>{
       const pg=e.target.closest(".spbtn"); if(pg){ groupPage=+pg.dataset.pg; renderSchedule(); return; }
+      const ch=e.target.closest(".gvchange"); if(ch){ voteExpand[ch.dataset.id]=true; renderGroupVote(ch.dataset.id); return; }
       const vb=e.target.closest(".gvb"); if(vb){ castVote(vb.dataset.id, vb.dataset.choice); }
     }); }
   }
@@ -849,11 +854,18 @@
     const picks=(voteData[id]&&voteData[id].picks)||{};
     let va=0,vd=0,vb=0; Object.values(picks).forEach(c=>{ if(c==="A")va++; else if(c==="D")vd++; else if(c==="B")vb++; });
     const total=va+vd+vb, mine=me?picks[me.uid]:null, pct=x=>total?Math.round(100*x/total):0;
+    if(mine && !voteExpand[id]){
+      const lbl = mine==="A"?(flagOf(a)+escapeHtml(a)) : mine==="B"?(flagOf(b)+escapeHtml(b)) : "Draw";
+      const breakdown = flagOf(a)+escapeHtml(a)+' '+pct(va)+'% · Draw '+pct(vd)+'% · '+flagOf(b)+escapeHtml(b)+' '+pct(vb)+'%';
+      host.innerHTML='<div class="gvoted">Your vote: <b>'+lbl+'</b>'+(total?' · '+total+' vote'+(total>1?'s':''):'')+'<button class="gvchange" type="button" data-id="'+id+'">Change</button></div>'
+        +'<div class="gvbreak">'+breakdown+'</div>';
+      return;
+    }
     const btn=(code,label,v)=>'<button class="gvb'+(mine===code?' on':'')+'" data-id="'+id+'" data-choice="'+code+'">'+label+' · '+pct(v)+'%</button>';
     host.innerHTML='<div class="gvh">Who wins?'+(total?' · '+total+' vote'+(total>1?'s':''):'')+'</div><div class="gvbtns">'
       +btn("A",flagOf(a)+escapeHtml(a),va)+btn("D","Draw",vd)+btn("B",flagOf(b)+escapeHtml(b),vb)+'</div>';
   }
-  let voteData={}, votesStarted=false;
+  let voteData={}, votesStarted=false, voteExpand={};
   function startVotes(){
     if(votesStarted) return; votesStarted=true;
     onSnapshot(collection(db,"votes"), (snap)=>{
@@ -863,6 +875,7 @@
   }
   async function castVote(id, choice){
     if(!me) return;
+    voteExpand[id]=false;   // collapse back to summary after voting
     try{ await setDoc(doc(db,"votes",String(id)), {picks:{[me.uid]:choice}}, {merge:true}); }
     catch(e){ console.error(e); alert("Couldn't save your vote — please try again."); }
   }
