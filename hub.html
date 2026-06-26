@@ -96,7 +96,11 @@
   .h2hlegend{ font-size:11.5px; color:#6e6e6e; margin-bottom:12px; display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
   #h2hBody{ max-height:58vh; overflow-y:auto; }
   .cmatch{ border-bottom:1px solid #f0f0f0; }
-  .crow{ display:grid; grid-template-columns:96px 1fr auto; gap:14px; align-items:start; padding:11px 4px 6px; }
+  .crow{ display:grid; grid-template-columns:108px 1fr auto; gap:14px; align-items:start; padding:11px 4px 6px; }
+  .cmatch .cdt{ cursor:pointer; user-select:none; }
+  .cmatch .mchev{ font-size:9px; color:#bbb; display:inline-block; transition:transform .15s; }
+  .cmatch.collapsed .mchev{ transform:rotate(-90deg); }
+  .cmatch.collapsed .cteams, .cmatch.collapsed .ctag, .cmatch.collapsed .cdetail{ display:none; }
   .cdt{ font-size:11px; color:#9a9a9a; } .cdt b{ display:block; color:#161616; font-size:12.5px; } 
   .cteams .ct{ padding:3px 0; }
   .cteams .ctn{ font-size:14px; font-weight:600; white-space:nowrap; }
@@ -238,7 +242,7 @@
 
       <div class="card">
         <h2>Round of 32 Matchups</h2>
-        <div class="sub">Each Round-of-32 match — your own pick is highlighted, plus everyone in the pool backing each team.</div>
+        <div class="sub">Each Round-of-32 match — tap a date to open it. Your own pick is highlighted; tap “Backers (N)” to see who else is on each team.</div>
         <div id="cheerList"><div class="empty">Loading…</div></div>
       </div>
 
@@ -805,16 +809,18 @@
         // explicit personal callout only when the user backed neither side (so their absence isn't confusing)
         if(me && picksMap[me.uid] && !mineA && !mineB) detail = '<div class="cmine neither">You didn\'t have either of these reaching the Round of 16.</div>';
       }
-      return '<div class="cmatch" data-num="'+m.num+'">'
-        + '<div class="crow"><div class="cdt"><b>'+m.date+'</b>'+m.time+'</div>'
+      const expanded = !!(a&&b);   // a real pairing opens by default; one team / TBD stays collapsed (date only)
+      return '<div class="cmatch '+(expanded?'expanded':'collapsed')+'" data-num="'+m.num+'">'
+        + '<div class="crow"><div class="cdt"><b>'+m.date+'</b>'+m.time+' <span class="mchev">▾</span></div>'
         + '<div class="cteams">'+teamsHTML+'</div>'
         + '<div class="ctag">'+m.round+'<span>'+escapeHtml(m.venue)+'</span></div></div>'
         + (detail?'<div class="cdetail">'+detail+'</div>':'')+'</div>';
     }).join('');
     if(!host._bkwired){ host._bkwired=true; host.addEventListener("click", e=>{
-      const btn=e.target.closest(".bktoggle"); if(!btn) return;
-      const nm=btn.closest(".ct").querySelector(".bknames"); if(!nm) return;
-      const open = nm.style.display==="none"; nm.style.display = open?"block":"none"; btn.classList.toggle("open", open);
+      const bt=e.target.closest(".bktoggle");
+      if(bt){ const nm=bt.closest(".ct").querySelector(".bknames"); if(nm){ const open=nm.style.display==="none"; nm.style.display=open?"block":"none"; bt.classList.toggle("open",open); } return; }
+      const hd=e.target.closest(".cdt");
+      if(hd){ const cm=hd.closest(".cmatch"); cm.classList.toggle("expanded"); cm.classList.toggle("collapsed"); }
     }); }
   }
 
