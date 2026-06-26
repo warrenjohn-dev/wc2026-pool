@@ -96,10 +96,12 @@
   .h2hlegend{ font-size:11.5px; color:#6e6e6e; margin-bottom:12px; display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
   #h2hBody{ max-height:58vh; overflow-y:auto; }
   .cmatch{ border-bottom:1px solid #f0f0f0; }
-  .crow{ display:grid; grid-template-columns:96px 1fr auto; gap:14px; align-items:center; padding:11px 4px; cursor:pointer; }
-  .crow:hover{ background:#fafafa; }
+  .crow{ display:grid; grid-template-columns:96px 1fr auto; gap:14px; align-items:center; padding:11px 4px 6px; }
   .cdt{ font-size:11px; color:#9a9a9a; } .cdt b{ display:block; color:#161616; font-size:12.5px; } 
-  .cteams div{ font-size:14px; font-weight:600; padding:1px 0; }
+  .cteams .ct{ padding:3px 0; }
+  .cteams .ctn{ font-size:14px; font-weight:600; }
+  .cteams .ctb{ font-size:11.5px; color:#9a9a9a; margin-top:1px; line-height:1.45; }
+  .cteams .ctb .none{ color:#cbcbcb; }
   .cteams .tbd{ color:#bbb; font-weight:500; }
   .ctag{ text-align:right; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:#9a9a9a; } .ctag span{ display:block; font-weight:600; text-transform:none; letter-spacing:0; color:#bbb; font-size:11px; margin-top:2px; }
   .cdetail{ padding:4px 4px 16px; }
@@ -230,8 +232,8 @@
       </div>
 
       <div class="card">
-        <h2>Who to cheer for</h2>
-        <div class="sub">Every knockout match — who in the pool is backing each side, and your vote. Tap a match for details. Teams fill in as the bracket resolves.</div>
+        <h2>Round of 32 Match Predictions</h2>
+        <div class="sub">Each Round-of-32 match with the pool members backing each team — plus your vote.</div>
         <div id="cheerList"><div class="empty">Loading…</div></div>
       </div>
 
@@ -772,46 +774,49 @@
     });
     return out.sort((a,b)=>a.localeCompare(b));
   }
+  const VISIBLE_ROUNDS=["Round of 32"];   // which rounds show in the cheer panel (add "Round of 16", etc. to reveal more)
   let voteData={}, votesStarted=false;
   function startVotes(){
     if(votesStarted) return; votesStarted=true;
     onSnapshot(collection(db,"votes"), (snap)=>{
       voteData={}; snap.forEach(s=> voteData[s.id]=s.data()||{});
-      document.querySelectorAll(".cdetail").forEach(d=>{ if(d.style.display!=="none") renderCheerDetail(+d.id.replace("cd-","")); });
+      document.querySelectorAll(".cvote[data-num]").forEach(c=> renderVotes(+c.dataset.num));
     }, (e)=>console.error(e));
   }
   function renderCheer(){
     const host=$("cheerList"); if(!host) return;
-    const matches=officialMatches();
+    const matches=officialMatches().filter(m=>VISIBLE_ROUNDS.includes(m.round));
+    if(!matches.length){ host.innerHTML='<div class="empty">Knockout matches appear here.</div>'; return; }
     host.innerHTML = matches.map(m=>{
       const [a,b]=m.teams;
-      const aN = a?(flagOf(a)+escapeHtml(a)) : '<span class="tbd">TBD</span>';
-      const bN = b?(flagOf(b)+escapeHtml(b)) : '<span class="tbd">TBD</span>';
+      let teamsHTML, detail;
+      if(!a||!b){
+        teamsHTML = '<div class="ct"><div class="ctn"><span class="tbd">TBD</span></div></div><div class="ct"><div class="ctn"><span class="tbd">TBD</span></div></div>';
+        detail = '<div class="empty" style="padding:2px 4px 6px">Teams aren\'t decided yet — fills in once the bracket resolves.</div>';
+      } else {
+        const ba=backersOf(a,m.round), bb=backersOf(b,m.round);
+        const tline=(team,arr)=>'<div class="ct"><div class="ctn">'+flagOf(team)+escapeHtml(team)+'</div><div class="ctb">Backers ('+arr.length+')'+(arr.length? ': '+arr.map(escapeHtml).join(', ') : '')+'</div></div>';
+        teamsHTML = tline(a,ba)+tline(b,bb);
+        detail = '<div class="cvote" data-num="'+m.num+'"></div>';
+      }
       return '<div class="cmatch" data-num="'+m.num+'">'
         + '<div class="crow"><div class="cdt"><b>'+m.date+'</b>'+m.time+'</div>'
-        + '<div class="cteams"><div>'+aN+'</div><div>'+bN+'</div></div>'
+        + '<div class="cteams">'+teamsHTML+'</div>'
         + '<div class="ctag">'+m.round+'<span>'+escapeHtml(m.venue)+'</span></div></div>'
-        + '<div class="cdetail" id="cd-'+m.num+'" style="display:none"></div></div>';
+        + '<div class="cdetail">'+detail+'</div></div>';
     }).join('');
-    host.querySelectorAll(".crow").forEach(r=> r.addEventListener("click", ()=>{
-      const num=+r.parentElement.dataset.num, det=$("cd-"+num);
-      if(det.style.display==="none"){ det.style.display="block"; renderCheerDetail(num); } else det.style.display="none";
-    }));
+    matches.forEach(m=>{ if(m.teams[0]&&m.teams[1]) renderVotes(m.num); });
   }
-  function renderCheerDetail(num){
-    const det=$("cd-"+num); if(!det) return;
-    const m=officialMatches().find(x=>x.num===num); if(!m){ det.innerHTML=""; return; }
-    const [a,b]=m.teams;
-    if(!a||!b){ det.innerHTML='<div class="empty">Teams aren\'t decided yet — check back once the bracket fills in.</div>'; return; }
-    const ba=backersOf(a,m.round), bb=backersOf(b,m.round);
+  function renderVotes(num){
+    const host=document.querySelector('.cvote[data-num="'+num+'"]'); if(!host) return;
+    const m=officialMatches().find(x=>x.num===num); if(!m) return;
+    const [a,b]=m.teams; if(!a||!b) return;
     const picks=(voteData[num]&&voteData[num].picks)||{};
     let va=0,vb=0; Object.values(picks).forEach(t=>{ if(t===a)va++; else if(t===b)vb++; });
     const total=va+vb, myPick=me?picks[me.uid]:null, pct=x=>total?Math.round(100*x/total):0;
-    const col=(team,arr)=>'<div class="cbcol"><div class="cbh">'+flagOf(team)+escapeHtml(team)+' — backers ('+arr.length+')</div>'+(arr.length?arr.map(n=>'<span class="bchip">'+escapeHtml(n)+'</span>').join(''):'<span class="empty">nobody in the pool</span>')+'</div>';
-    const vb_=(team,v)=>'<button class="cvb'+(myPick===team?' on':'')+'" data-num="'+num+'" data-team="'+escapeHtml(team).replace(/"/g,'&quot;')+'">'+flagOf(team)+escapeHtml(team)+' · '+pct(v)+'%</button>';
-    det.innerHTML = '<div class="cback">'+col(a,ba)+col(b,bb)+'</div>'
-      + '<div class="cvote"><div class="cvh">Who do you think wins?'+(total?' · '+total+' vote'+(total>1?'s':''):'')+'</div><div class="cvbtns">'+vb_(a,va)+vb_(b,vb)+'</div></div>';
-    det.querySelectorAll(".cvb").forEach(btn=> btn.addEventListener("click", ()=> castVote(+btn.dataset.num, btn.dataset.team)));
+    const vbtn=(team,v)=>'<button class="cvb'+(myPick===team?' on':'')+'" data-num="'+num+'" data-team="'+escapeHtml(team).replace(/"/g,'&quot;')+'">'+flagOf(team)+escapeHtml(team)+' · '+pct(v)+'%</button>';
+    host.innerHTML = '<div class="cvh">Who do you think wins?'+(total?' · '+total+' vote'+(total>1?'s':''):'')+'</div><div class="cvbtns">'+vbtn(a,va)+vbtn(b,vb)+'</div>';
+    host.querySelectorAll(".cvb").forEach(btn=> btn.addEventListener("click", ()=> castVote(+btn.dataset.num, btn.dataset.team)));
   }
   async function castVote(num, team){
     if(!me){ return; }
