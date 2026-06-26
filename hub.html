@@ -250,8 +250,8 @@
       </div>
 
       <div class="card">
-        <h2>Match Schedule</h2>
-        <div class="sub">Every remaining match — the last group games plus the full knockout path, all times ET. Knockout teams fill in as the bracket resolves.</div>
+        <h2>Remaining Group Matches</h2>
+        <div class="sub">The final group-stage games (Jun 26–27), all times ET. Teams you picked to advance are highlighted.</div>
         <div id="schedList"><div class="empty">Loading…</div></div>
       </div>
 
@@ -826,11 +826,7 @@
       +'<div class="steams">'+teamCell(r.teams[0],pickSet)+teamCell(r.teams[1],pickSet)+'</div>'
       +'<div class="stag">'+escapeHtml(r.tag)+'<span>'+escapeHtml(r.venue)+'</span></div></div></div>';
     const gset=setFor("Group");
-    let html='<div class="ssec">Group Stage · remaining</div>'
-      + GROUP_FIXTURES.map(g=>rowHTML(g, gset)).join('')
-      + '<div class="ssec">Knockout Stage</div>'
-      + officialMatches().map(m=>rowHTML({date:m.date,time:m.time,venue:m.venue,tag:m.round,teams:m.teams}, setFor(m.round))).join('');
-    host.innerHTML=html;
+    host.innerHTML = GROUP_FIXTURES.map(g=>rowHTML(g, gset)).join('');
   }
   function renderCheer(){
     const host=$("cheerList"); if(!host) return;
