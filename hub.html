@@ -104,12 +104,20 @@
   .steams div{ font-size:14px; font-weight:600; padding:1px 0; }
   .steams .tbd{ color:#bbb; font-weight:500; }
   .steams .smine{ font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; color:#1f8a4c; background:#e9f5ee; border-radius:10px; padding:2px 7px; margin-left:8px; white-space:nowrap; }
+  .schk{ color:#1f8a4c; font-weight:800; }
+  .slegend{ font-size:11.5px; color:#6e6e6e; margin:0 0 10px; }
+  .gvote{ background:#f6f6f6; border-radius:8px; padding:9px 11px; margin:4px 4px 2px; }
+  .gvh{ font-size:11.5px; font-weight:700; color:#6e6e6e; margin-bottom:7px; }
+  .gvbtns{ display:flex; gap:7px; }
+  .gvb{ flex:1; padding:8px 6px; border:1px solid #d7d7d7; border-radius:7px; background:#fff; font-size:12.5px; font-weight:700; cursor:pointer; }
+  .gvb:hover{ border-color:#161616; }
+  .gvb.on{ background:#161616; color:#fff; border-color:#161616; }
+  .spager{ display:flex; gap:8px; justify-content:center; margin-top:16px; }
+  .spbtn{ padding:7px 15px; border:1px solid #d7d7d7; border-radius:8px; background:#fff; font-size:12.5px; font-weight:700; cursor:pointer; color:#6e6e6e; }
+  .spbtn:hover{ border-color:#161616; }
+  .spbtn.on{ background:#161616; color:#fff; border-color:#161616; }
   .stag{ text-align:right; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:#9a9a9a; } .stag span{ display:block; font-weight:600; text-transform:none; letter-spacing:0; color:#bbb; font-size:11px; margin-top:2px; }
   .crow{ display:grid; grid-template-columns:108px 1fr auto; gap:14px; align-items:start; padding:11px 4px 6px; }
-  .cmatch .cdt{ cursor:pointer; user-select:none; }
-  .cmatch .mchev{ font-size:9px; color:#bbb; display:inline-block; transition:transform .15s; }
-  .cmatch.collapsed .mchev{ transform:rotate(-90deg); }
-  .cmatch.collapsed .cteams, .cmatch.collapsed .ctag, .cmatch.collapsed .cdetail{ display:none; }
   .cdt{ font-size:11px; color:#9a9a9a; } .cdt b{ display:block; color:#161616; font-size:12.5px; } 
   .cteams .ct{ padding:3px 0; }
   .cteams .ctn{ font-size:14px; font-weight:600; white-space:nowrap; }
@@ -255,7 +263,7 @@
         <div id="schedList"><div class="empty">Loading…</div></div>
       </div>
 
-      <div class="card">
+      <div class="card" id="matchupsCard">
         <h2>Round of 32 Matchups</h2>
         <div class="sub">Each Round-of-32 match — tap a date to open it. Your own pick is highlighted; tap “Backers (N)” to see who else is on each team.</div>
         <div id="cheerList"><div class="empty">Loading…</div></div>
@@ -522,6 +530,7 @@
     try{ const gr=await getDoc(doc(db,"meta","groupResults")); if(gr.exists()) groupResults=gr.data(); }catch(e){}
     renderOfficialBracket();
     renderSchedule();
+    startVotes();
   }
   function startStandings(){
     onSnapshot(collection(db, "players"), (snap)=>{
@@ -796,75 +805,96 @@
   const VISIBLE_ROUNDS=["Round of 32"];   // which rounds show in the panel (add "Round of 16", etc. to reveal more)
   // Remaining group-stage fixtures (Jun 26–27, 2026), ET
   const GROUP_FIXTURES=[
-    {date:"Fri Jun 26",time:"3:00 PM ET",venue:"Boston",tag:"Group I",teams:["Norway","France"]},
-    {date:"Fri Jun 26",time:"3:00 PM ET",venue:"Toronto",tag:"Group I",teams:["Senegal","Iraq"]},
-    {date:"Fri Jun 26",time:"8:00 PM ET",venue:"Houston",tag:"Group H",teams:["Cape Verde","Saudi Arabia"]},
-    {date:"Fri Jun 26",time:"8:00 PM ET",venue:"Guadalajara",tag:"Group H",teams:["Uruguay","Spain"]},
-    {date:"Fri Jun 26",time:"11:00 PM ET",venue:"Seattle",tag:"Group G",teams:["Egypt","Iran"]},
-    {date:"Fri Jun 26",time:"11:00 PM ET",venue:"Vancouver",tag:"Group G",teams:["New Zealand","Belgium"]},
-    {date:"Sat Jun 27",time:"5:00 PM ET",venue:"New York/NJ",tag:"Group L",teams:["Panama","England"]},
-    {date:"Sat Jun 27",time:"5:00 PM ET",venue:"Philadelphia",tag:"Group L",teams:["Croatia","Ghana"]},
-    {date:"Sat Jun 27",time:"7:30 PM ET",venue:"Miami",tag:"Group K",teams:["Colombia","Portugal"]},
-    {date:"Sat Jun 27",time:"7:30 PM ET",venue:"Atlanta",tag:"Group K",teams:["DR Congo","Uzbekistan"]},
-    {date:"Sat Jun 27",time:"10:00 PM ET",venue:"Kansas City",tag:"Group J",teams:["Algeria","Austria"]},
-    {date:"Sat Jun 27",time:"10:00 PM ET",venue:"Dallas",tag:"Group J",teams:["Jordan","Argentina"]}
+    {id:"g1",date:"Fri Jun 26",time:"3:00 PM ET",venue:"Boston",tag:"Group I",teams:["Norway","France"]},
+    {id:"g2",date:"Fri Jun 26",time:"3:00 PM ET",venue:"Toronto",tag:"Group I",teams:["Senegal","Iraq"]},
+    {id:"g3",date:"Fri Jun 26",time:"8:00 PM ET",venue:"Houston",tag:"Group H",teams:["Cape Verde","Saudi Arabia"]},
+    {id:"g4",date:"Fri Jun 26",time:"8:00 PM ET",venue:"Guadalajara",tag:"Group H",teams:["Uruguay","Spain"]},
+    {id:"g5",date:"Fri Jun 26",time:"11:00 PM ET",venue:"Seattle",tag:"Group G",teams:["Egypt","Iran"]},
+    {id:"g6",date:"Fri Jun 26",time:"11:00 PM ET",venue:"Vancouver",tag:"Group G",teams:["New Zealand","Belgium"]},
+    {id:"g7",date:"Sat Jun 27",time:"5:00 PM ET",venue:"New York/NJ",tag:"Group L",teams:["Panama","England"]},
+    {id:"g8",date:"Sat Jun 27",time:"5:00 PM ET",venue:"Philadelphia",tag:"Group L",teams:["Croatia","Ghana"]},
+    {id:"g9",date:"Sat Jun 27",time:"7:30 PM ET",venue:"Miami",tag:"Group K",teams:["Colombia","Portugal"]},
+    {id:"g10",date:"Sat Jun 27",time:"7:30 PM ET",venue:"Atlanta",tag:"Group K",teams:["DR Congo","Uzbekistan"]},
+    {id:"g11",date:"Sat Jun 27",time:"10:00 PM ET",venue:"Kansas City",tag:"Group J",teams:["Algeria","Austria"]},
+    {id:"g12",date:"Sat Jun 27",time:"10:00 PM ET",venue:"Dallas",tag:"Group J",teams:["Jordan","Argentina"]}
   ];
+  let groupPage=1;
   function renderSchedule(){
     const host=$("schedList"); if(!host) return;
     const S = (me && picksMap[me.uid]) ? deriveSets(picksMap[me.uid]) : null;
-    const setFor=(round)=>{ if(!S) return null;
-      return round==="Group"?S.r32 : round==="Round of 32"?S.r16 : round==="Round of 16"?S.qf
-           : round==="Quarter-final"?S.sf : round==="Semi-final"?S.fin
-           : round==="Final"?new Set(S.champ?[S.champ]:[]) : round==="3rd place"?new Set(S.third?[S.third]:[]) : null; };
-    const teamCell=(t,pickSet)=>{
-      if(!t) return '<div><span class="tbd">TBD</span></div>';
-      const mine = pickSet && pickSet.has(t);
-      return '<div>'+flagOf(t)+escapeHtml(t)+(mine?'<span class="smine">✓ your pick</span>':'')+'</div>';
-    };
-    const rowHTML=(r,pickSet)=>'<div class="smatch"><div class="srow">'
-      +'<div class="sdt"><b>'+r.date+'</b>'+r.time+'</div>'
-      +'<div class="steams">'+teamCell(r.teams[0],pickSet)+teamCell(r.teams[1],pickSet)+'</div>'
-      +'<div class="stag">'+escapeHtml(r.tag)+'<span>'+escapeHtml(r.venue)+'</span></div></div></div>';
-    const gset=setFor("Group");
-    host.innerHTML = GROUP_FIXTURES.map(g=>rowHTML(g, gset)).join('');
+    const gset = S ? S.r32 : null;
+    const day = groupPage===1 ? "Fri Jun 26" : "Sat Jun 27";
+    const list = GROUP_FIXTURES.filter(g=> g.date===day);
+    const teamCell=(t)=>{ const mine=gset&&gset.has(t); return '<div>'+flagOf(t)+escapeHtml(t)+(mine?' <span class="schk" title="The team you picked to advance — your side to cheer for">★</span>':'')+'</div>'; };
+    const rows = list.map(g=>
+      '<div class="smatch"><div class="srow">'
+      +'<div class="sdt"><b>'+g.date+'</b>'+g.time+'</div>'
+      +'<div class="steams">'+teamCell(g.teams[0])+teamCell(g.teams[1])+'</div>'
+      +'<div class="stag">'+escapeHtml(g.tag)+'<span>'+escapeHtml(g.venue)+'</span></div></div>'
+      +'<div class="gvote" data-id="'+g.id+'" data-a="'+escapeHtml(g.teams[0]).replace(/"/g,'&quot;')+'" data-b="'+escapeHtml(g.teams[1]).replace(/"/g,'&quot;')+'"></div>'
+      +'</div>'
+    ).join('');
+    const legend = '<div class="slegend"><span class="schk">★</span> = the team you picked to advance — your side to cheer for.</div>';
+    const pager = '<div class="spager"><button class="spbtn'+(groupPage===1?' on':'')+'" data-pg="1">1 · Fri</button><button class="spbtn'+(groupPage===2?' on':'')+'" data-pg="2">2 · Sat</button></div>';
+    host.innerHTML = legend + rows + pager;
+    list.forEach(g=> renderGroupVote(g.id));
+    if(!host._gwired){ host._gwired=true; host.addEventListener("click", e=>{
+      const pg=e.target.closest(".spbtn"); if(pg){ groupPage=+pg.dataset.pg; renderSchedule(); return; }
+      const vb=e.target.closest(".gvb"); if(vb){ castVote(vb.dataset.id, vb.dataset.choice); }
+    }); }
+  }
+  function renderGroupVote(id){
+    const host=document.querySelector('.gvote[data-id="'+id+'"]'); if(!host) return;
+    const a=host.dataset.a, b=host.dataset.b;
+    const picks=(voteData[id]&&voteData[id].picks)||{};
+    let va=0,vd=0,vb=0; Object.values(picks).forEach(c=>{ if(c==="A")va++; else if(c==="D")vd++; else if(c==="B")vb++; });
+    const total=va+vd+vb, mine=me?picks[me.uid]:null, pct=x=>total?Math.round(100*x/total):0;
+    const btn=(code,label,v)=>'<button class="gvb'+(mine===code?' on':'')+'" data-id="'+id+'" data-choice="'+code+'">'+label+' · '+pct(v)+'%</button>';
+    host.innerHTML='<div class="gvh">Who wins?'+(total?' · '+total+' vote'+(total>1?'s':''):'')+'</div><div class="gvbtns">'
+      +btn("A",flagOf(a)+escapeHtml(a),va)+btn("D","Draw",vd)+btn("B",flagOf(b)+escapeHtml(b),vb)+'</div>';
+  }
+  let voteData={}, votesStarted=false;
+  function startVotes(){
+    if(votesStarted) return; votesStarted=true;
+    onSnapshot(collection(db,"votes"), (snap)=>{
+      voteData={}; snap.forEach(s=> voteData[s.id]=s.data()||{});
+      document.querySelectorAll(".gvote[data-id]").forEach(c=> renderGroupVote(c.dataset.id));
+    }, e=>console.error(e));
+  }
+  async function castVote(id, choice){
+    if(!me) return;
+    try{ await setDoc(doc(db,"votes",String(id)), {picks:{[me.uid]:choice}}, {merge:true}); }
+    catch(e){ console.error(e); alert("Couldn't save your vote — please try again."); }
   }
   function renderCheer(){
     const host=$("cheerList"); if(!host) return;
-    const matches=officialMatches().filter(m=>VISIBLE_ROUNDS.includes(m.round));
-    if(!matches.length){ host.innerHTML='<div class="empty">Knockout matches appear here.</div>'; return; }
+    const card=$("matchupsCard");
+    const matches=officialMatches().filter(m=> VISIBLE_ROUNDS.includes(m.round) && m.teams[0] && m.teams[1]);
+    if(!matches.length){ if(card) card.style.display="none"; host.innerHTML=""; return; }
+    if(card) card.style.display="";
     host.innerHTML = matches.map(m=>{
       const [a,b]=m.teams;
-      let teamsHTML, detail="";
-      if(!a||!b){
-        teamsHTML = '<div class="ct"><span class="ctn"><span class="tbd">TBD</span></span></div><div class="ct"><span class="ctn"><span class="tbd">TBD</span></span></div>';
-        detail = '<div class="empty" style="padding:2px 4px 6px">Teams aren\'t decided yet — fills in once the bracket resolves.</div>';
-      } else {
-        const ua=backerUidsOf(a,m.round), ub=backerUidsOf(b,m.round);
-        const mineA=me&&ua.includes(me.uid), mineB=me&&ub.includes(me.uid);
-        const names=arr=> arr.map(uid=> (me&&uid===me.uid)?'<b>You</b>':escapeHtml(rosterName(uid))).join(', ');
-        const tline=(team,arr,mine)=>{
-          const tag = mine?'<span class="mypick">✓ your pick</span>':'';
-          const ctrl = arr.length
-            ? '<button class="bktoggle" type="button">Backers ('+arr.length+') <span class="chev">▾</span></button><div class="bknames" style="display:none">'+names(arr)+'</div>'
-            : '<span class="bkzero">Backers (0)</span>';
-          return '<div class="ct"><span class="ctn">'+flagOf(team)+escapeHtml(team)+'</span>'+tag+ctrl+'</div>';
-        };
-        teamsHTML = tline(a,ua,mineA)+tline(b,ub,mineB);
-        // explicit personal callout only when the user backed neither side (so their absence isn't confusing)
-        if(me && picksMap[me.uid] && !mineA && !mineB) detail = '<div class="cmine neither">You didn\'t have either of these reaching the Round of 16.</div>';
-      }
-      const expanded = !!(a&&b);   // a real pairing opens by default; one team / TBD stays collapsed (date only)
-      return '<div class="cmatch '+(expanded?'expanded':'collapsed')+'" data-num="'+m.num+'">'
-        + '<div class="crow"><div class="cdt"><b>'+m.date+'</b>'+m.time+' <span class="mchev">▾</span></div>'
-        + '<div class="cteams">'+teamsHTML+'</div>'
+      const ua=backerUidsOf(a,m.round), ub=backerUidsOf(b,m.round);
+      const mineA=me&&ua.includes(me.uid), mineB=me&&ub.includes(me.uid);
+      const names=arr=> arr.map(uid=> (me&&uid===me.uid)?'<b>You</b>':escapeHtml(rosterName(uid))).join(', ');
+      const tline=(team,arr,mine)=>{
+        const tag = mine?'<span class="mypick">✓ your pick</span>':'';
+        const ctrl = arr.length
+          ? '<button class="bktoggle" type="button">Backers ('+arr.length+') <span class="chev">▾</span></button><div class="bknames" style="display:none">'+names(arr)+'</div>'
+          : '<span class="bkzero">Backers (0)</span>';
+        return '<div class="ct"><span class="ctn">'+flagOf(team)+escapeHtml(team)+'</span>'+tag+ctrl+'</div>';
+      };
+      let detail="";
+      if(me && picksMap[me.uid] && !mineA && !mineB) detail = '<div class="cmine neither">You didn\'t have either of these reaching the Round of 16.</div>';
+      return '<div class="cmatch" data-num="'+m.num+'">'
+        + '<div class="crow"><div class="cdt"><b>'+m.date+'</b>'+m.time+'</div>'
+        + '<div class="cteams">'+tline(a,ua,mineA)+tline(b,ub,mineB)+'</div>'
         + '<div class="ctag">'+m.round+'<span>'+escapeHtml(m.venue)+'</span></div></div>'
         + (detail?'<div class="cdetail">'+detail+'</div>':'')+'</div>';
     }).join('');
     if(!host._bkwired){ host._bkwired=true; host.addEventListener("click", e=>{
       const bt=e.target.closest(".bktoggle");
-      if(bt){ const nm=bt.closest(".ct").querySelector(".bknames"); if(nm){ const open=nm.style.display==="none"; nm.style.display=open?"block":"none"; bt.classList.toggle("open",open); } return; }
-      const hd=e.target.closest(".cdt");
-      if(hd){ const cm=hd.closest(".cmatch"); cm.classList.toggle("expanded"); cm.classList.toggle("collapsed"); }
+      if(bt){ const nm=bt.closest(".ct").querySelector(".bknames"); if(nm){ const open=nm.style.display==="none"; nm.style.display=open?"block":"none"; bt.classList.toggle("open",open); } }
     }); }
   }
 
