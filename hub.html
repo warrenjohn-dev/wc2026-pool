@@ -111,6 +111,14 @@
   .scroller{ display:flex; gap:14px; overflow-x:auto; padding:2px 2px 12px; max-width:100%; }
   .scroller .mcard{ flex:0 0 250px; }
   .mcard{ border:1px solid var(--border); border-radius:14px; overflow:hidden; background:#fff; display:flex; flex-direction:column; }
+  .mcard.mclick{ cursor:pointer; transition:border-color .12s, box-shadow .12s, transform .12s; }
+  .mcard.mclick:hover{ border-color:#161616; box-shadow:0 5px 18px rgba(0,0,0,.09); }
+  .mcue{ padding:0 14px 12px; text-align:center; font-size:11px; font-weight:700; color:#1f8a4c; }
+  .bkblock{ padding:13px 0; border-bottom:1px solid #f0f0f0; }
+  .bkblock:last-of-type{ border-bottom:none; }
+  .bkhd{ font-size:14.5px; font-weight:700; color:#161616; margin-bottom:5px; }
+  .bkblock .bknames{ font-size:13px; color:#555555; line-height:1.6; }
+  .bkblock .bknames b{ color:#161616; }
   .mbar{ height:10px; }
   .mbody{ padding:12px 14px 0; }
   .mtime{ font-size:12px; font-weight:700; color:#161616; margin-bottom:12px; }
@@ -395,6 +403,15 @@
   </div>
 </div>
 
+<div class="modal" id="bkModal">
+  <div class="modalcard" style="max-width:520px">
+    <h3 id="bkTitle">Matchup</h3>
+    <div class="ph" id="bkSub"></div>
+    <div id="bkBody"></div>
+    <button class="closebtn" id="bkClose" type="button">Close</button>
+  </div>
+</div>
+
 <div class="modal" id="h2hModal">
   <div class="modalcard">
     <h3>Head-to-head</h3>
@@ -440,6 +457,8 @@
   $("h2hOpen").addEventListener("click", openH2H);
   $("h2hClose").addEventListener("click", ()=> $("h2hModal").classList.remove("show"));
   $("h2hModal").addEventListener("click", e=>{ if(e.target.id==="h2hModal") $("h2hModal").classList.remove("show"); });
+  $("bkClose").addEventListener("click", ()=> $("bkModal").classList.remove("show"));
+  $("bkModal").addEventListener("click", e=>{ if(e.target.id==="bkModal") $("bkModal").classList.remove("show"); });
   $("h2hA").addEventListener("change", renderH2H);
   $("h2hB").addEventListener("change", renderH2H);
 
@@ -915,23 +934,30 @@
     if(card) card.style.display="";
     host.innerHTML = '<div class="cardgrid">' + matches.map(m=>{
       const a=m.teams[0], b=m.teams[1];
-      const ua=backerUidsOf(a,m.round), ub=backerUidsOf(b,m.round);
-      const mineA=me&&ua.includes(me.uid), mineB=me&&ub.includes(me.uid);
-      const names=arr=> arr.map(uid=> (me&&uid===me.uid)?'<b>You</b>':escapeHtml(rosterName(uid))).join(', ');
+      const mineA=me&&backerUidsOf(a,m.round).includes(me.uid), mineB=me&&backerUidsOf(b,m.round).includes(me.uid);
       const side=(t,mine)=>'<div class="mside"><div class="fl">'+(FLAGS[t]||'')+'</div><div class="code">'+escapeHtml(codeOf(t))+'</div><div class="nm">'+escapeHtml(t)+'</div>'+(mine?'<div class="mpick">✓ your pick</div>':'')+'</div>';
-      const bk=(team,arr)=> arr.length
-        ? '<div class="bkrow"><button class="bktoggle" type="button">'+flagOf(team)+escapeHtml(codeOf(team))+' — Backers ('+arr.length+') <span class="chev">▾</span></button><div class="bknames" style="display:none">'+names(arr)+'</div></div>'
-        : '<div class="bkrow bkzero">'+flagOf(team)+escapeHtml(codeOf(team))+' — Backers (0)</div>';
-      const note = (me && picksMap[me.uid] && !mineA && !mineB) ? '<div class="mnote">Neither was your pick to reach the Round of 16.</div>' : '';
-      return '<div class="mcard"><div class="mbar" style="'+teamBar(a,b)+'"></div>'
+      return '<div class="mcard mclick" data-a="'+escapeHtml(a)+'" data-b="'+escapeHtml(b)+'" data-round="'+escapeHtml(m.round)+'" data-venue="'+escapeHtml(m.venue)+'" data-date="'+escapeHtml(m.date)+'" data-time="'+escapeHtml(m.time)+'">'
+        +'<div class="mbar" style="'+teamBar(a,b)+'"></div>'
         +'<div class="mbody"><div class="mtime">'+m.date+' · '+m.time+'</div><div class="mteams">'+side(a,mineA)+'<div class="mvs">vs</div>'+side(b,mineB)+'</div></div>'
         +'<div class="mfoot">'+escapeHtml(m.venue)+' · '+escapeHtml(m.round)+'</div>'
-        +'<div class="bkwrap">'+bk(a,ua)+bk(b,ub)+note+'</div></div>';
+        +'<div class="mcue">Tap to see backers ›</div></div>';
     }).join('') + '</div>';
     if(!host._bkwired){ host._bkwired=true; host.addEventListener("click", e=>{
-      const bt=e.target.closest(".bktoggle");
-      if(bt){ const nm=bt.parentElement.querySelector(".bknames"); if(nm){ const open=nm.style.display==="none"; nm.style.display=open?"block":"none"; bt.classList.toggle("open",open); } }
+      const c=e.target.closest(".mcard.mclick"); if(!c) return;
+      openMatchBackers(c.dataset.a, c.dataset.b, c.dataset.round, c.dataset.venue, c.dataset.date, c.dataset.time);
     }); }
+  }
+  function openMatchBackers(a,b,round,venue,date,time){
+    const ua=backerUidsOf(a,round), ub=backerUidsOf(b,round);
+    const mineA=me&&ua.includes(me.uid), mineB=me&&ub.includes(me.uid);
+    const names=arr=> arr.length ? arr.map(uid=>(me&&uid===me.uid)?'<b>You</b>':escapeHtml(rosterName(uid))).join(', ') : '<span style="color:#bbb">No one yet</span>';
+    const block=(t,arr,mine)=>'<div class="bkblock"><div class="bkhd">'+flagOf(t)+escapeHtml(t)+(mine?' <span class="mpick">✓ your pick</span>':'')+' — Backers ('+arr.length+')</div><div class="bknames">'+names(arr)+'</div></div>';
+    $("bkTitle").innerHTML = flagOf(a)+escapeHtml(codeOf(a))+' <span style="color:#cfcfcf">vs</span> '+flagOf(b)+escapeHtml(codeOf(b));
+    $("bkSub").textContent = round+' · '+venue+' · '+date+' · '+time;
+    let html=block(a,ua,mineA)+block(b,ub,mineB);
+    if(me && picksMap[me.uid] && !mineA && !mineB) html += '<div class="mnote" style="text-align:left;padding:8px 0 0">Neither was your pick to reach the Round of 16.</div>';
+    $("bkBody").innerHTML=html;
+    $("bkModal").classList.add("show");
   }
 
   function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
