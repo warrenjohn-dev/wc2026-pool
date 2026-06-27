@@ -28,7 +28,7 @@
   .grid{ display:grid; grid-template-columns:1fr; gap:18px; align-items:start; }
   @media(max-width:820px){ .grid{ grid-template-columns:1fr; } }
   .card{ background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px 18px; box-shadow:0 3px 14px rgba(0,0,0,.05); }
-  .card h2{ font-size:14.5px; letter-spacing:.4px; text-transform:uppercase; color:var(--taupe); margin:0 0 12px; }
+  .card h2{ font-size:20px; letter-spacing:.3px; text-transform:uppercase; color:#161616; font-weight:700; margin:0 0 12px; }
   table{ width:100%; border-collapse:collapse; }
   th,td{ text-align:left; padding:9px 8px; border-bottom:1px solid #eeeeee; font-size:15.5px; }
   th{ font-size:12.5px; text-transform:uppercase; letter-spacing:.3px; color:var(--taupe); }
@@ -50,6 +50,7 @@
   button.alivebtn{ font:inherit; font-weight:700; color:#161616; cursor:pointer; padding:3px 10px; border:1px solid rgba(22,22,22,.30); border-radius:7px; background:rgba(22,22,22,.05); }
   button.alivebtn:hover{ background:#161616; color:#fff; border-color:#161616; }
   table.standings th.grp{ text-align:center; font-size:10px; letter-spacing:.5px; color:#9a9a9a; font-weight:700; padding-bottom:2px; border-bottom:1px solid #eee; }
+  table.standings tr.schead th{ background:#161616; color:#ffffff; border-bottom-color:#161616; }
   .tlhead{ font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:#6e6e6e; font-weight:700; margin:12px 0 8px; }
   .tchips{ display:flex; flex-wrap:wrap; gap:6px; }
   .tchip{ border:1px solid #e2e2e2; border-radius:20px; padding:4px 12px; font-size:13px; font-weight:600; color:#161616; }
@@ -247,7 +248,7 @@
         <table class="standings">
           <thead>
             <tr><th colspan="4"></th><th colspan="8" class="grp">Points breakdown per round</th></tr>
-            <tr><th>#</th><th>Player</th><th class="ctr">Teams left</th><th class="ctr">Champion</th><th class="ctr">R32</th><th class="ctr">R16</th><th class="ctr">QF</th><th class="ctr">SF</th><th class="ctr">Final</th><th class="ctr">Champ</th><th class="ctr">3rd</th><th style="text-align:right">Total</th></tr>
+            <tr class="schead"><th>#</th><th>Player</th><th class="ctr">Teams left</th><th class="ctr">Champion</th><th class="ctr">R32</th><th class="ctr">R16</th><th class="ctr">QF</th><th class="ctr">SF</th><th class="ctr">Final</th><th class="ctr">Champ</th><th class="ctr">3rd</th><th style="text-align:right">Total</th></tr>
           </thead>
           <tbody id="standingsBody"><tr><td colspan="12" class="empty">No entries yet.</td></tr></tbody>
         </table>
