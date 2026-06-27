@@ -130,6 +130,10 @@
   .mstar{ color:#1f8a4c; }
   .mpick{ display:inline-block; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; color:#1f8a4c; background:#e9f5ee; border-radius:9px; padding:1px 6px; margin-top:4px; }
   .mvs{ align-self:center; font-size:11px; font-weight:800; color:#cfcfcf; padding-top:18px; }
+  .mvs.hassc{ font-size:19px; color:#161616; padding-top:14px; letter-spacing:.5px; }
+  .mstat{ font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; padding:1px 6px; border-radius:8px; vertical-align:middle; }
+  .mstat.live{ color:#fff; background:#d10000; }
+  .mstat.done{ color:#6e6e6e; background:#eeeeee; }
   .mfoot{ margin-top:12px; padding:9px 14px; border-top:1px solid #f0f0f0; font-size:11.5px; color:#9a9a9a; text-align:center; }
   .mnote{ font-size:11px; color:#b3402e; padding:2px 0 4px; text-align:center; }
   .bkwrap{ padding:8px 14px 12px; }
@@ -579,6 +583,7 @@
     renderOfficialBracket();
     renderSchedule();
     startVotes();
+    startScores();
   }
   function startStandings(){
     onSnapshot(collection(db, "players"), (snap)=>{
@@ -879,8 +884,8 @@
     const list = GROUP_FIXTURES.filter(g=> g.date===day);
     const side=(t)=>{ const mine=gset&&gset.has(t); return '<div class="mside"><div class="fl">'+(FLAGS[t]||'')+'</div><div class="code">'+escapeHtml(codeOf(t))+(mine?' <span class="mstar">★</span>':'')+'</div><div class="nm">'+escapeHtml(t)+'</div></div>'; };
     const cards = list.map(g=>{ const a=g.teams[0], b=g.teams[1];
-      return '<div class="mcard"><div class="mbar" style="'+teamBar(a,b)+'"></div>'
-        +'<div class="mbody"><div class="mtime">'+g.date+' · '+g.time+'</div><div class="mteams">'+side(a)+'<div class="mvs">vs</div>'+side(b)+'</div></div>'
+      return '<div class="mcard" data-a="'+escapeHtml(a)+'" data-b="'+escapeHtml(b)+'"><div class="mbar" style="'+teamBar(a,b)+'"></div>'
+        +'<div class="mbody"><div class="mtime">'+g.date+' · '+g.time+' <span class="mstat"></span></div><div class="mteams">'+side(a)+'<div class="mvs">vs</div>'+side(b)+'</div></div>'
         +'<div class="mfoot">'+escapeHtml(g.venue)+' · '+escapeHtml(g.tag)+'</div>'
         +'<div class="gvote" data-id="'+g.id+'" data-a="'+escapeHtml(a).replace(/"/g,'&quot;')+'" data-b="'+escapeHtml(b).replace(/"/g,'&quot;')+'"></div></div>';
     }).join('');
@@ -888,6 +893,7 @@
     const pager = days.length>1 ? '<div class="spager">'+days.map((d,i)=>'<button class="spbtn'+((i+1)===groupPage?' on':'')+'" data-pg="'+(i+1)+'">'+(i+1)+' · '+escapeHtml(d.split(" ")[0])+'</button>').join('')+'</div>' : '';
     host.innerHTML = legend + '<div class="scroller">'+cards+'</div>' + pager;
     list.forEach(g=> renderGroupVote(g.id));
+    applyScores();
     if(!host._gwired){ host._gwired=true; host.addEventListener("click", e=>{
       const pg=e.target.closest(".spbtn"); if(pg){ groupPage=+pg.dataset.pg; renderSchedule(); return; }
       const ch=e.target.closest(".gvchange"); if(ch){ voteExpand[ch.dataset.id]=true; renderGroupVote(ch.dataset.id); return; }
@@ -926,6 +932,49 @@
     try{ await setDoc(doc(db,"votes",String(id)), {picks:{[me.uid]:choice}}, {merge:true}); }
     catch(e){ console.error(e); alert("Couldn't save your vote — please try again."); }
   }
+  // ---- Live scores (ESPN public scoreboard — no key, browser-fetchable; degrades silently) ----
+  const SCORE_URL="https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard";
+  const ESPN_ALIAS={ "United States":"USA","Korea Republic":"South Korea","Cabo Verde":"Cape Verde","Côte d'Ivoire":"Ivory Coast","Czech Republic":"Czechia","Türkiye":"Turkiye","IR Iran":"Iran","Congo DR":"DR Congo" };
+  let lastScores={}, scoreTimer=null;
+  function espnToOurs(name,abbr){
+    if(abbr){ for(const t in TEAM_CODE){ if(TEAM_CODE[t]===abbr) return t; } }
+    if(name && ESPN_ALIAS[name]) return ESPN_ALIAS[name];
+    return name||"";
+  }
+  async function fetchScores(){
+    try{
+      const r=await fetch(SCORE_URL,{cache:"no-store"}); if(!r.ok) return;
+      const j=await r.json(); const map={};
+      (j.events||[]).forEach(ev=>{
+        const c=ev.competitions&&ev.competitions[0]; if(!c||!c.competitors||c.competitors.length<2) return;
+        const st=(c.status&&c.status.type)||{};
+        const nm=x=>espnToOurs(x.team&&x.team.displayName, x.team&&x.team.abbreviation);
+        const a=c.competitors[0], b=c.competitors[1], ta=nm(a), tb=nm(b);
+        map[[ta,tb].sort().join("|")]={ state:st.state, sa:a.score, sb:b.score, ta:ta, tb:tb,
+          clock:(c.status&&c.status.displayClock)||"", short:st.shortDetail||"" };
+      });
+      lastScores=map; applyScores();
+    }catch(e){ /* feed unavailable — cards just stay score-less */ }
+  }
+  function applyScores(){
+    document.querySelectorAll(".mcard[data-a][data-b]").forEach(card=>{
+      const a=card.dataset.a, b=card.dataset.b;
+      const rec=lastScores[[a,b].sort().join("|")];
+      const vs=card.querySelector(".mvs"), stat=card.querySelector(".mstat");
+      if(!rec || rec.state==="pre" || rec.sa==null || rec.sb==null){
+        if(vs){ vs.textContent="vs"; vs.classList.remove("hassc"); }
+        if(stat){ stat.textContent=""; stat.className="mstat"; }
+        return;
+      }
+      const sA = rec.ta===a ? rec.sa : rec.sb, sB = rec.ta===a ? rec.sb : rec.sa;
+      if(vs){ vs.textContent=sA+'–'+sB; vs.classList.add("hassc"); }
+      if(stat){
+        if(rec.state==="in"){ stat.textContent=rec.clock||"LIVE"; stat.className="mstat live"; }
+        else { stat.textContent=rec.short||"FT"; stat.className="mstat done"; }
+      }
+    });
+  }
+  function startScores(){ fetchScores(); if(scoreTimer) clearInterval(scoreTimer); scoreTimer=setInterval(fetchScores, 30000); }
   function renderCheer(){
     const host=$("cheerList"); if(!host) return;
     const card=$("matchupsCard");
@@ -938,10 +987,11 @@
       const side=(t,mine)=>'<div class="mside"><div class="fl">'+(FLAGS[t]||'')+'</div><div class="code">'+escapeHtml(codeOf(t))+'</div><div class="nm">'+escapeHtml(t)+'</div>'+(mine?'<div class="mpick">✓ your pick</div>':'')+'</div>';
       return '<div class="mcard mclick" data-a="'+escapeHtml(a)+'" data-b="'+escapeHtml(b)+'" data-round="'+escapeHtml(m.round)+'" data-venue="'+escapeHtml(m.venue)+'" data-date="'+escapeHtml(m.date)+'" data-time="'+escapeHtml(m.time)+'">'
         +'<div class="mbar" style="'+teamBar(a,b)+'"></div>'
-        +'<div class="mbody"><div class="mtime">'+m.date+' · '+m.time+'</div><div class="mteams">'+side(a,mineA)+'<div class="mvs">vs</div>'+side(b,mineB)+'</div></div>'
+        +'<div class="mbody"><div class="mtime">'+m.date+' · '+m.time+' <span class="mstat"></span></div><div class="mteams">'+side(a,mineA)+'<div class="mvs">vs</div>'+side(b,mineB)+'</div></div>'
         +'<div class="mfoot">'+escapeHtml(m.venue)+' · '+escapeHtml(m.round)+'</div>'
         +'<div class="mcue">Tap to see backers ›</div></div>';
     }).join('') + '</div>';
+    applyScores();
     if(!host._bkwired){ host._bkwired=true; host.addEventListener("click", e=>{
       const c=e.target.closest(".mcard.mclick"); if(!c) return;
       openMatchBackers(c.dataset.a, c.dataset.b, c.dataset.round, c.dataset.venue, c.dataset.date, c.dataset.time);
