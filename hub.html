@@ -106,8 +106,32 @@
   .steams .tbd{ color:#bbb; font-weight:500; }
   .steams .smine{ font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; color:#1f8a4c; background:#e9f5ee; border-radius:10px; padding:2px 7px; margin-left:8px; white-space:nowrap; }
   .schk{ color:#1f8a4c; font-weight:800; }
-  .slegend{ font-size:11.5px; color:#6e6e6e; margin:0 0 10px; }
-  .gvote{ background:#f6f6f6; border-radius:8px; padding:9px 11px; margin:4px 4px 2px; }
+  .slegend{ font-size:11.5px; color:#6e6e6e; margin:0 0 12px; }
+  .cardgrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:14px; }
+  .mcard{ border:1px solid var(--border); border-radius:14px; overflow:hidden; background:#fff; display:flex; flex-direction:column; }
+  .mbar{ height:10px; }
+  .mbody{ padding:12px 14px 0; }
+  .mtime{ font-size:12px; font-weight:700; color:#161616; margin-bottom:12px; }
+  .mteams{ display:flex; align-items:flex-start; justify-content:space-between; gap:6px; }
+  .mside{ text-align:center; flex:1; min-width:0; }
+  .mside .fl{ font-size:26px; line-height:1; }
+  .mside .code{ font-size:15px; font-weight:800; margin-top:6px; letter-spacing:.5px; color:#161616; }
+  .mside .nm{ font-size:10.5px; color:#9a9a9a; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .mstar{ color:#1f8a4c; }
+  .mpick{ display:inline-block; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; color:#1f8a4c; background:#e9f5ee; border-radius:9px; padding:1px 6px; margin-top:4px; }
+  .mvs{ align-self:center; font-size:11px; font-weight:800; color:#cfcfcf; padding-top:18px; }
+  .mfoot{ margin-top:12px; padding:9px 14px; border-top:1px solid #f0f0f0; font-size:11.5px; color:#9a9a9a; text-align:center; }
+  .mnote{ font-size:11px; color:#b3402e; padding:2px 0 4px; text-align:center; }
+  .bkwrap{ padding:8px 14px 12px; }
+  .bkrow{ font-size:11.5px; margin-top:4px; }
+  .bkrow.bkzero{ color:#cbcbcb; }
+  .bkrow .bktoggle{ background:none; border:none; padding:0; font-family:inherit; font-size:11.5px; color:#6e6e6e; cursor:pointer; font-weight:600; }
+  .bkrow .bktoggle:hover{ color:#161616; }
+  .bkrow .bktoggle .chev{ font-size:9px; display:inline-block; transition:transform .15s; }
+  .bkrow .bktoggle.open .chev{ transform:rotate(180deg); }
+  .bkrow .bknames{ font-size:11px; color:#9a9a9a; margin:3px 0 0; line-height:1.5; }
+  .bkrow .bknames b{ color:#161616; }
+  .gvote{ padding:10px 14px 14px; }
   .gvh{ font-size:11.5px; font-weight:700; color:#6e6e6e; margin-bottom:7px; }
   .gvbtns{ display:flex; gap:7px; }
   .gvb{ flex:1; padding:8px 6px; border:1px solid #d7d7d7; border-radius:7px; background:#fff; font-size:12.5px; font-weight:700; cursor:pointer; }
@@ -693,6 +717,11 @@
   }
   const FLAGS={"Mexico":"🇲🇽","South Korea":"🇰🇷","South Africa":"🇿🇦","Czechia":"🇨🇿","Canada":"🇨🇦","Switzerland":"🇨🇭","Qatar":"🇶🇦","Bosnia-Herzegovina":"🇧🇦","Brazil":"🇧🇷","Morocco":"🇲🇦","Scotland":"🏴󠁧󠁢󠁳󠁣󠁴󠁿","Haiti":"🇭🇹","USA":"🇺🇸","Paraguay":"🇵🇾","Australia":"🇦🇺","Turkiye":"🇹🇷","Germany":"🇩🇪","Ecuador":"🇪🇨","Ivory Coast":"🇨🇮","Curacao":"🇨🇼","Netherlands":"🇳🇱","Japan":"🇯🇵","Tunisia":"🇹🇳","Sweden":"🇸🇪","Belgium":"🇧🇪","Iran":"🇮🇷","Egypt":"🇪🇬","New Zealand":"🇳🇿","Spain":"🇪🇸","Uruguay":"🇺🇾","Saudi Arabia":"🇸🇦","Cape Verde":"🇨🇻","France":"🇫🇷","Senegal":"🇸🇳","Norway":"🇳🇴","Iraq":"🇮🇶","Argentina":"🇦🇷","Austria":"🇦🇹","Algeria":"🇩🇿","Jordan":"🇯🇴","Portugal":"🇵🇹","Colombia":"🇨🇴","Uzbekistan":"🇺🇿","DR Congo":"🇨🇩","England":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Croatia":"🇭🇷","Panama":"🇵🇦","Ghana":"🇬🇭"};
   function flagOf(name){ return FLAGS[name] ? FLAGS[name]+" " : ""; }
+  const TEAM_CODE={"Mexico":"MEX","South Korea":"KOR","South Africa":"RSA","Czechia":"CZE","Canada":"CAN","Switzerland":"SUI","Qatar":"QAT","Bosnia-Herzegovina":"BIH","Brazil":"BRA","Morocco":"MAR","Scotland":"SCO","Haiti":"HAI","USA":"USA","Paraguay":"PAR","Australia":"AUS","Turkiye":"TUR","Germany":"GER","Ecuador":"ECU","Ivory Coast":"CIV","Curacao":"CUW","Netherlands":"NED","Japan":"JPN","Tunisia":"TUN","Sweden":"SWE","Belgium":"BEL","Iran":"IRN","Egypt":"EGY","New Zealand":"NZL","Spain":"ESP","Uruguay":"URU","Saudi Arabia":"KSA","Cape Verde":"CPV","France":"FRA","Senegal":"SEN","Norway":"NOR","Iraq":"IRQ","Argentina":"ARG","Austria":"AUT","Algeria":"ALG","Jordan":"JOR","Portugal":"POR","Colombia":"COL","Uzbekistan":"UZB","DR Congo":"COD","England":"ENG","Croatia":"CRO","Panama":"PAN","Ghana":"GHA"};
+  const TEAM_COLOR={"Mexico":"#006847","South Korea":"#c60c30","South Africa":"#007a4d","Czechia":"#11457e","Canada":"#d52b1e","Switzerland":"#d52b1e","Qatar":"#8a1538","Bosnia-Herzegovina":"#002395","Brazil":"#1b9e3e","Morocco":"#c1272d","Scotland":"#005eb8","Haiti":"#00209f","USA":"#0a3161","Paraguay":"#d52b1e","Australia":"#00843d","Turkiye":"#e30a17","Germany":"#1a1a1a","Ecuador":"#ffcd00","Ivory Coast":"#f77f00","Curacao":"#002b7f","Netherlands":"#ff6200","Japan":"#0a1f8f","Tunisia":"#e70013","Sweden":"#006aa7","Belgium":"#c8102e","Iran":"#239f40","Egypt":"#ce1126","New Zealand":"#1a1a1a","Spain":"#aa151b","Uruguay":"#3b6fb6","Saudi Arabia":"#006c35","Cape Verde":"#003893","France":"#002395","Senegal":"#00853f","Norway":"#ba0c2f","Iraq":"#007a3d","Argentina":"#6c9ed4","Austria":"#ed2939","Algeria":"#0a7b3e","Jordan":"#007a3d","Portugal":"#c8102e","Colombia":"#f5c518","Uzbekistan":"#0099b5","DR Congo":"#2ba9e0","England":"#001489","Croatia":"#d10000","Panama":"#d21034","Ghana":"#006b3f"};
+  const codeOf=t=> TEAM_CODE[t]||(t?t.slice(0,3).toUpperCase():"");
+  const colorOf=t=> TEAM_COLOR[t]||"#888888";
+  const teamBar=(a,b)=>'background:linear-gradient(100deg,'+colorOf(a)+' 0%,'+colorOf(a)+' 47%,'+colorOf(b)+' 53%,'+colorOf(b)+' 100%)';
   function bkRow(name, state){ const c=state==="win"?"bk-team bk-win":(state==="lose"?"bk-team bk-lose":"bk-team"); return '<div class="'+c+'"><span>'+(name?flagOf(name)+escapeHtml(name):"—")+'</span></div>'; }
   function bkMatch(m){ const a=m.teams[0],b=m.teams[1]; let sa="na",sb="na"; if(m.win){ sa=(m.win===a)?"win":"lose"; sb=(m.win===b)?"win":"lose"; } return '<div class="bk-match">'+bkRow(a,sa)+bkRow(b,sb)+'</div>'; }
   function bkCol(head, matches){ return '<div class="bk-col"><div class="bk-head">'+head+'</div><div class="bk-body">'+matches.map(bkMatch).join("")+'</div></div>'; }
@@ -829,18 +858,16 @@
     if(groupPage>days.length) groupPage=1;
     const day = days[groupPage-1] || days[0];
     const list = GROUP_FIXTURES.filter(g=> g.date===day);
-    const teamCell=(t)=>{ const mine=gset&&gset.has(t); return '<div>'+flagOf(t)+escapeHtml(t)+(mine?' <span class="schk" title="The team you picked to advance — your side to cheer for">★</span>':'')+'</div>'; };
-    const rows = list.map(g=>
-      '<div class="smatch"><div class="srow">'
-      +'<div class="sdt"><b>'+g.date+'</b>'+g.time+'</div>'
-      +'<div class="steams">'+teamCell(g.teams[0])+teamCell(g.teams[1])+'</div>'
-      +'<div class="stag">'+escapeHtml(g.tag)+'<span>'+escapeHtml(g.venue)+'</span></div></div>'
-      +'<div class="gvote" data-id="'+g.id+'" data-a="'+escapeHtml(g.teams[0]).replace(/"/g,'&quot;')+'" data-b="'+escapeHtml(g.teams[1]).replace(/"/g,'&quot;')+'"></div>'
-      +'</div>'
-    ).join('');
-    const legend = '<div class="slegend"><span class="schk">★</span> = the team you picked to advance — your side to cheer for.</div>';
+    const side=(t)=>{ const mine=gset&&gset.has(t); return '<div class="mside"><div class="fl">'+(FLAGS[t]||'')+'</div><div class="code">'+escapeHtml(codeOf(t))+(mine?' <span class="mstar">★</span>':'')+'</div><div class="nm">'+escapeHtml(t)+'</div></div>'; };
+    const cards = list.map(g=>{ const a=g.teams[0], b=g.teams[1];
+      return '<div class="mcard"><div class="mbar" style="'+teamBar(a,b)+'"></div>'
+        +'<div class="mbody"><div class="mtime">'+g.time+'</div><div class="mteams">'+side(a)+'<div class="mvs">vs</div>'+side(b)+'</div></div>'
+        +'<div class="mfoot">'+escapeHtml(g.venue)+' · '+escapeHtml(g.tag)+'</div>'
+        +'<div class="gvote" data-id="'+g.id+'" data-a="'+escapeHtml(a).replace(/"/g,'&quot;')+'" data-b="'+escapeHtml(b).replace(/"/g,'&quot;')+'"></div></div>';
+    }).join('');
+    const legend = '<div class="slegend"><span class="mstar">★</span> = the team you picked to advance — your side to cheer for.</div>';
     const pager = days.length>1 ? '<div class="spager">'+days.map((d,i)=>'<button class="spbtn'+((i+1)===groupPage?' on':'')+'" data-pg="'+(i+1)+'">'+(i+1)+' · '+escapeHtml(d.split(" ")[0])+'</button>').join('')+'</div>' : '';
-    host.innerHTML = legend + rows + pager;
+    host.innerHTML = legend + '<div class="cardgrid">'+cards+'</div>' + pager;
     list.forEach(g=> renderGroupVote(g.id));
     if(!host._gwired){ host._gwired=true; host.addEventListener("click", e=>{
       const pg=e.target.closest(".spbtn"); if(pg){ groupPage=+pg.dataset.pg; renderSchedule(); return; }
@@ -854,16 +881,17 @@
     const picks=(voteData[id]&&voteData[id].picks)||{};
     let va=0,vd=0,vb=0; Object.values(picks).forEach(c=>{ if(c==="A")va++; else if(c==="D")vd++; else if(c==="B")vb++; });
     const total=va+vd+vb, mine=me?picks[me.uid]:null, pct=x=>total?Math.round(100*x/total):0;
+    const La=flagOf(a)+escapeHtml(codeOf(a)), Lb=flagOf(b)+escapeHtml(codeOf(b));
     if(mine && !voteExpand[id]){
-      const lbl = mine==="A"?(flagOf(a)+escapeHtml(a)) : mine==="B"?(flagOf(b)+escapeHtml(b)) : "Draw";
-      const breakdown = flagOf(a)+escapeHtml(a)+' '+pct(va)+'% · Draw '+pct(vd)+'% · '+flagOf(b)+escapeHtml(b)+' '+pct(vb)+'%';
+      const lbl = mine==="A"?La : mine==="B"?Lb : "Draw";
+      const breakdown = La+' '+pct(va)+'% · Draw '+pct(vd)+'% · '+Lb+' '+pct(vb)+'%';
       host.innerHTML='<div class="gvoted">Your vote: <b>'+lbl+'</b>'+(total?' · '+total+' vote'+(total>1?'s':''):'')+'<button class="gvchange" type="button" data-id="'+id+'">Change</button></div>'
         +'<div class="gvbreak">'+breakdown+'</div>';
       return;
     }
     const btn=(code,label,v)=>'<button class="gvb'+(mine===code?' on':'')+'" data-id="'+id+'" data-choice="'+code+'">'+label+' · '+pct(v)+'%</button>';
     host.innerHTML='<div class="gvh">Who wins?'+(total?' · '+total+' vote'+(total>1?'s':''):'')+'</div><div class="gvbtns">'
-      +btn("A",flagOf(a)+escapeHtml(a),va)+btn("D","Draw",vd)+btn("B",flagOf(b)+escapeHtml(b),vb)+'</div>';
+      +btn("A",La,va)+btn("D","Draw",vd)+btn("B",Lb,vb)+'</div>';
   }
   let voteData={}, votesStarted=false, voteExpand={};
   function startVotes(){
@@ -885,29 +913,24 @@
     const matches=officialMatches().filter(m=> VISIBLE_ROUNDS.includes(m.round) && m.teams[0] && m.teams[1]);
     if(!matches.length){ if(card) card.style.display="none"; host.innerHTML=""; return; }
     if(card) card.style.display="";
-    host.innerHTML = matches.map(m=>{
-      const [a,b]=m.teams;
+    host.innerHTML = '<div class="cardgrid">' + matches.map(m=>{
+      const a=m.teams[0], b=m.teams[1];
       const ua=backerUidsOf(a,m.round), ub=backerUidsOf(b,m.round);
       const mineA=me&&ua.includes(me.uid), mineB=me&&ub.includes(me.uid);
       const names=arr=> arr.map(uid=> (me&&uid===me.uid)?'<b>You</b>':escapeHtml(rosterName(uid))).join(', ');
-      const tline=(team,arr,mine)=>{
-        const tag = mine?'<span class="mypick">✓ your pick</span>':'';
-        const ctrl = arr.length
-          ? '<button class="bktoggle" type="button">Backers ('+arr.length+') <span class="chev">▾</span></button><div class="bknames" style="display:none">'+names(arr)+'</div>'
-          : '<span class="bkzero">Backers (0)</span>';
-        return '<div class="ct"><span class="ctn">'+flagOf(team)+escapeHtml(team)+'</span>'+tag+ctrl+'</div>';
-      };
-      let detail="";
-      if(me && picksMap[me.uid] && !mineA && !mineB) detail = '<div class="cmine neither">You didn\'t have either of these reaching the Round of 16.</div>';
-      return '<div class="cmatch" data-num="'+m.num+'">'
-        + '<div class="crow"><div class="cdt"><b>'+m.date+'</b>'+m.time+'</div>'
-        + '<div class="cteams">'+tline(a,ua,mineA)+tline(b,ub,mineB)+'</div>'
-        + '<div class="ctag">'+m.round+'<span>'+escapeHtml(m.venue)+'</span></div></div>'
-        + (detail?'<div class="cdetail">'+detail+'</div>':'')+'</div>';
-    }).join('');
+      const side=(t,mine)=>'<div class="mside"><div class="fl">'+(FLAGS[t]||'')+'</div><div class="code">'+escapeHtml(codeOf(t))+'</div><div class="nm">'+escapeHtml(t)+'</div>'+(mine?'<div class="mpick">✓ your pick</div>':'')+'</div>';
+      const bk=(team,arr)=> arr.length
+        ? '<div class="bkrow"><button class="bktoggle" type="button">'+flagOf(team)+escapeHtml(codeOf(team))+' — Backers ('+arr.length+') <span class="chev">▾</span></button><div class="bknames" style="display:none">'+names(arr)+'</div></div>'
+        : '<div class="bkrow bkzero">'+flagOf(team)+escapeHtml(codeOf(team))+' — Backers (0)</div>';
+      const note = (me && picksMap[me.uid] && !mineA && !mineB) ? '<div class="mnote">Neither was your pick to reach the Round of 16.</div>' : '';
+      return '<div class="mcard"><div class="mbar" style="'+teamBar(a,b)+'"></div>'
+        +'<div class="mbody"><div class="mtime">'+m.time+'</div><div class="mteams">'+side(a,mineA)+'<div class="mvs">vs</div>'+side(b,mineB)+'</div></div>'
+        +'<div class="mfoot">'+escapeHtml(m.venue)+' · '+escapeHtml(m.round)+'</div>'
+        +'<div class="bkwrap">'+bk(a,ua)+bk(b,ub)+note+'</div></div>';
+    }).join('') + '</div>';
     if(!host._bkwired){ host._bkwired=true; host.addEventListener("click", e=>{
       const bt=e.target.closest(".bktoggle");
-      if(bt){ const nm=bt.closest(".ct").querySelector(".bknames"); if(nm){ const open=nm.style.display==="none"; nm.style.display=open?"block":"none"; bt.classList.toggle("open",open); } }
+      if(bt){ const nm=bt.parentElement.querySelector(".bknames"); if(nm){ const open=nm.style.display==="none"; nm.style.display=open?"block":"none"; bt.classList.toggle("open",open); } }
     }); }
   }
 
