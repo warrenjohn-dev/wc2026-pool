@@ -861,7 +861,7 @@
     const side=(t)=>{ const mine=gset&&gset.has(t); return '<div class="mside"><div class="fl">'+(FLAGS[t]||'')+'</div><div class="code">'+escapeHtml(codeOf(t))+(mine?' <span class="mstar">★</span>':'')+'</div><div class="nm">'+escapeHtml(t)+'</div></div>'; };
     const cards = list.map(g=>{ const a=g.teams[0], b=g.teams[1];
       return '<div class="mcard"><div class="mbar" style="'+teamBar(a,b)+'"></div>'
-        +'<div class="mbody"><div class="mtime">'+g.time+'</div><div class="mteams">'+side(a)+'<div class="mvs">vs</div>'+side(b)+'</div></div>'
+        +'<div class="mbody"><div class="mtime">'+g.date+' · '+g.time+'</div><div class="mteams">'+side(a)+'<div class="mvs">vs</div>'+side(b)+'</div></div>'
         +'<div class="mfoot">'+escapeHtml(g.venue)+' · '+escapeHtml(g.tag)+'</div>'
         +'<div class="gvote" data-id="'+g.id+'" data-a="'+escapeHtml(a).replace(/"/g,'&quot;')+'" data-b="'+escapeHtml(b).replace(/"/g,'&quot;')+'"></div></div>';
     }).join('');
@@ -924,7 +924,7 @@
         : '<div class="bkrow bkzero">'+flagOf(team)+escapeHtml(codeOf(team))+' — Backers (0)</div>';
       const note = (me && picksMap[me.uid] && !mineA && !mineB) ? '<div class="mnote">Neither was your pick to reach the Round of 16.</div>' : '';
       return '<div class="mcard"><div class="mbar" style="'+teamBar(a,b)+'"></div>'
-        +'<div class="mbody"><div class="mtime">'+m.time+'</div><div class="mteams">'+side(a,mineA)+'<div class="mvs">vs</div>'+side(b,mineB)+'</div></div>'
+        +'<div class="mbody"><div class="mtime">'+m.date+' · '+m.time+'</div><div class="mteams">'+side(a,mineA)+'<div class="mvs">vs</div>'+side(b,mineB)+'</div></div>'
         +'<div class="mfoot">'+escapeHtml(m.venue)+' · '+escapeHtml(m.round)+'</div>'
         +'<div class="bkwrap">'+bk(a,ua)+bk(b,ub)+note+'</div></div>';
     }).join('') + '</div>';
