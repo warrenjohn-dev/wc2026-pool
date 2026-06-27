@@ -108,6 +108,8 @@
   .schk{ color:#1f8a4c; font-weight:800; }
   .slegend{ font-size:11.5px; color:#6e6e6e; margin:0 0 12px; }
   .cardgrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:14px; }
+  .scroller{ display:flex; gap:14px; overflow-x:auto; padding:2px 2px 12px; }
+  .scroller .mcard{ flex:0 0 250px; }
   .mcard{ border:1px solid var(--border); border-radius:14px; overflow:hidden; background:#fff; display:flex; flex-direction:column; }
   .mbar{ height:10px; }
   .mbody{ padding:12px 14px 0; }
@@ -264,6 +266,12 @@
     <div class="sub" id="deadlineNote"></div>
 
     <div class="grid">
+      <div class="card" id="groupCard">
+        <h2>Remaining Group Matches</h2>
+        <div class="sub">The final group-stage games, all times ET. Teams you picked to advance are highlighted.</div>
+        <div id="schedList"><div class="empty">Loading…</div></div>
+      </div>
+
       <div class="card">
         <h2>Standings</h2>
         <div class="empty" style="margin:-4px 0 10px">Tip: tap a player's <b style="color:#161616">name</b>, <b style="color:#161616">teams left</b>, or <b style="color:#161616">total</b> for a detailed breakdown.</div>
@@ -284,12 +292,6 @@
         <h2>Official bracket</h2>
         <div class="sub" id="officialSub">The real tournament bracket, filling in as results are published.</div>
         <div class="scrollx"><div id="officialBracket"><div class="empty">The bracket appears once group-stage results are entered.</div></div></div>
-      </div>
-
-      <div class="card" id="groupCard">
-        <h2>Remaining Group Matches</h2>
-        <div class="sub">The final group-stage games (Jun 26–27), all times ET. Teams you picked to advance are highlighted.</div>
-        <div id="schedList"><div class="empty">Loading…</div></div>
       </div>
 
       <div class="card" id="matchupsCard">
@@ -867,7 +869,7 @@
     }).join('');
     const legend = '<div class="slegend"><span class="mstar">★</span> = the team you picked to advance — your side to cheer for.</div>';
     const pager = days.length>1 ? '<div class="spager">'+days.map((d,i)=>'<button class="spbtn'+((i+1)===groupPage?' on':'')+'" data-pg="'+(i+1)+'">'+(i+1)+' · '+escapeHtml(d.split(" ")[0])+'</button>').join('')+'</div>' : '';
-    host.innerHTML = legend + '<div class="cardgrid">'+cards+'</div>' + pager;
+    host.innerHTML = legend + '<div class="scroller">'+cards+'</div>' + pager;
     list.forEach(g=> renderGroupVote(g.id));
     if(!host._gwired){ host._gwired=true; host.addEventListener("click", e=>{
       const pg=e.target.closest(".spbtn"); if(pg){ groupPage=+pg.dataset.pg; renderSchedule(); return; }
