@@ -261,7 +261,7 @@
         <div class="scrollx"><div id="officialBracket"><div class="empty">The bracket appears once group-stage results are entered.</div></div></div>
       </div>
 
-      <div class="card">
+      <div class="card" id="groupCard">
         <h2>Remaining Group Matches</h2>
         <div class="sub">The final group-stage games (Jun 26–27), all times ET. Teams you picked to advance are highlighted.</div>
         <div id="schedList"><div class="empty">Loading…</div></div>
@@ -809,10 +809,6 @@
   const VISIBLE_ROUNDS=["Round of 32"];   // which rounds show in the panel (add "Round of 16", etc. to reveal more)
   // Remaining group-stage fixtures (Jun 26–27, 2026), ET
   const GROUP_FIXTURES=[
-    {id:"g3",date:"Fri Jun 26",time:"8:00 PM ET",venue:"Houston",tag:"Group H",teams:["Cape Verde","Saudi Arabia"]},
-    {id:"g4",date:"Fri Jun 26",time:"8:00 PM ET",venue:"Guadalajara",tag:"Group H",teams:["Uruguay","Spain"]},
-    {id:"g5",date:"Fri Jun 26",time:"11:00 PM ET",venue:"Seattle",tag:"Group G",teams:["Egypt","Iran"]},
-    {id:"g6",date:"Fri Jun 26",time:"11:00 PM ET",venue:"Vancouver",tag:"Group G",teams:["New Zealand","Belgium"]},
     {id:"g7",date:"Sat Jun 27",time:"5:00 PM ET",venue:"New York/NJ",tag:"Group L",teams:["Panama","England"]},
     {id:"g8",date:"Sat Jun 27",time:"5:00 PM ET",venue:"Philadelphia",tag:"Group L",teams:["Croatia","Ghana"]},
     {id:"g9",date:"Sat Jun 27",time:"7:30 PM ET",venue:"Miami",tag:"Group K",teams:["Colombia","Portugal"]},
@@ -823,9 +819,14 @@
   let groupPage=1;
   function renderSchedule(){
     const host=$("schedList"); if(!host) return;
+    const card=$("groupCard");
+    if(!GROUP_FIXTURES.length){ if(card) card.style.display="none"; host.innerHTML=""; return; }
+    if(card) card.style.display="";
     const S = (me && picksMap[me.uid]) ? deriveSets(picksMap[me.uid]) : null;
     const gset = S ? S.r32 : null;
-    const day = groupPage===1 ? "Fri Jun 26" : "Sat Jun 27";
+    const days=[...new Set(GROUP_FIXTURES.map(g=>g.date))];
+    if(groupPage>days.length) groupPage=1;
+    const day = days[groupPage-1] || days[0];
     const list = GROUP_FIXTURES.filter(g=> g.date===day);
     const teamCell=(t)=>{ const mine=gset&&gset.has(t); return '<div>'+flagOf(t)+escapeHtml(t)+(mine?' <span class="schk" title="The team you picked to advance — your side to cheer for">★</span>':'')+'</div>'; };
     const rows = list.map(g=>
@@ -837,7 +838,7 @@
       +'</div>'
     ).join('');
     const legend = '<div class="slegend"><span class="schk">★</span> = the team you picked to advance — your side to cheer for.</div>';
-    const pager = '<div class="spager"><button class="spbtn'+(groupPage===1?' on':'')+'" data-pg="1">1 · Fri</button><button class="spbtn'+(groupPage===2?' on':'')+'" data-pg="2">2 · Sat</button></div>';
+    const pager = days.length>1 ? '<div class="spager">'+days.map((d,i)=>'<button class="spbtn'+((i+1)===groupPage?' on':'')+'" data-pg="'+(i+1)+'">'+(i+1)+' · '+escapeHtml(d.split(" ")[0])+'</button>').join('')+'</div>' : '';
     host.innerHTML = legend + rows + pager;
     list.forEach(g=> renderGroupVote(g.id));
     if(!host._gwired){ host._gwired=true; host.addEventListener("click", e=>{
