@@ -493,7 +493,8 @@
   const DEADLINE_MS = 1781204400000; // June 11, 2026, 3:00 PM EDT
   const revealed = () => Date.now() > DEADLINE_MS;
   let me = null;
-  let rosterList = [];  // [{uid,name}] for the head-to-head selectors
+  let rosterList = [];  // [{uid,name}] ALL signed-in profiles — used for prediction names
+  let bracketList = [];  // [{uid,name}] bracket participants only — used for standings + compare
 
   const deadlineStr = new Date(DEADLINE_MS).toLocaleString([], {weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
 
@@ -517,11 +518,11 @@
   }
   function openH2H(){
     if(!revealed()){ alert("Brackets become viewable after " + deadlineStr + "."); return; }
-    if(!rosterList.length){ return; }
-    const opts = rosterList.map(r=>'<option value="'+r.uid+'">'+escapeHtml(r.name)+'</option>').join('');
+    if(!bracketList.length){ return; }
+    const opts = bracketList.map(r=>'<option value="'+r.uid+'">'+escapeHtml(r.name)+'</option>').join('');
     $("h2hA").innerHTML=opts; $("h2hB").innerHTML=opts;
-    if(me && rosterList.some(r=>r.uid===me.uid)) $("h2hA").value=me.uid;
-    const av=$("h2hA").value; const other=rosterList.find(r=>r.uid!==av); if(other) $("h2hB").value=other.uid;
+    if(me && bracketList.some(r=>r.uid===me.uid)) $("h2hA").value=me.uid;
+    const av=$("h2hA").value; const other=bracketList.find(r=>r.uid!==av); if(other) $("h2hB").value=other.uid;
     $("h2hModal").classList.add("show");
     renderH2H();
   }
@@ -563,6 +564,7 @@
   onAuthStateChanged(auth, (user)=>{
     if(!user){ location.href="index.html"; return; }
     me = user;
+    ensurePredProfile(user);
     if(!revealed()) syncMyStatus(user.uid);
     $("who").textContent = user.displayName || (user.email? user.email.split("@")[0] : "Player");
     $("loading").style.display="none";
@@ -628,10 +630,29 @@
     startVotes();
     startScores();
   }
+  // New accounts (post-deadline) can't enter the bracket, but may join the predictions.
+  // Give anyone without a profile a name-only record (predOnly) so their real name shows on the
+  // Prediction Leaderboard. They are kept OUT of the bracket standings (filtered by predOnly).
+  async function ensurePredProfile(user){
+    if(!user || (user.email && user.email.toLowerCase()===ADMIN_EMAIL)) return;
+    try{
+      const ref=doc(db,"players",user.uid);
+      const snap=await getDoc(ref);
+      if(!snap.exists()){
+        const username=user.email? user.email.split("@")[0] : "";
+        const displayName=user.displayName || username || "Player";
+        await setDoc(ref, { uid:user.uid, username, displayName, predOnly:true, updatedAt:serverTimestamp() }, { merge:true });
+      }
+    }catch(e){ console.error(e); }
+  }
   function startStandings(){
     onSnapshot(collection(db, "players"), (snap)=>{
-      const rows = [];
-      snap.forEach(d=> rows.push(d.data()));
+      const all = [];
+      snap.forEach(d=> all.push(d.data()));
+      // ALL profiles power the prediction-board name lookup (incl. predictions-only newcomers)
+      rosterList = all.map(r=>({ uid:r.uid, name:r.displayName||r.username||"Player" }));
+      // Bracket standings + compare show real entrants only (predictions-only accounts excluded)
+      const rows = all.filter(r=> !r.predOnly);
       rows.sort((a,b)=>
         (b.points||0)-(a.points||0)
         || (b.teamsLeft||0)-(a.teamsLeft||0)
@@ -640,10 +661,11 @@
         || (b.tbThird||0)-(a.tbThird||0)
         || String(a.displayName||a.username).localeCompare(String(b.displayName||b.username))
       );
+      bracketList = rows.map(r=>({ uid:r.uid, name:r.displayName||r.username||"Player" }));
       const body = $("standingsBody");
-      rosterList = rows.map(r=>({ uid:r.uid, name:r.displayName||r.username||"Player" }));
       renderCheer();
       renderUpcoming();
+      renderPredBoard();
       if(rows.length===0){ body.innerHTML = '<tr><td colspan="12" class="empty">No entries yet — be the first to submit!</td></tr>'; return; }
       body.innerHTML = "";
       const showChamp = revealed();
