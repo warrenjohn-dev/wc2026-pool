@@ -112,32 +112,34 @@
   .scroller .mcard{ flex:0 0 250px; }
   .upeyebrow{ text-align:center; font-size:11px; font-weight:800; letter-spacing:.8px; text-transform:uppercase; color:#b3b3b3; }
   .upday{ text-align:center; font-family:'Outfit',system-ui,sans-serif; font-size:25px; font-weight:800; color:#161616; margin:3px 0 18px; }
-  .upmatch{ max-width:500px; margin:0 auto; }
-  .hero{ border:1px solid #ededed; border-radius:18px; overflow:hidden; background:#fff; box-shadow:0 10px 34px rgba(0,0,0,.09); }
+  .upmatch{ max-width:none; margin:0; }
+  .hero{ border:1px solid #ececec; border-radius:18px; overflow:hidden; background:linear-gradient(180deg,#ffffff,#fbfbfc); box-shadow:0 10px 34px rgba(0,0,0,.09); }
   .hero.clickable{ cursor:pointer; transition:box-shadow .12s, transform .12s; }
-  .hero.clickable:hover{ box-shadow:0 14px 40px rgba(0,0,0,.13); transform:translateY(-2px); }
-  .herobar{ height:6px; }
-  .herotop{ display:flex; justify-content:space-between; align-items:center; padding:12px 14px 0; min-height:30px; }
-  .rpill{ font-size:9.5px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:#fff; background:#161616; padding:3px 10px; border-radius:20px; }
-  .hmatch{ display:grid; grid-template-columns:1fr 56px 1fr; align-items:center; padding:14px 6px 12px; }
+  .hero.clickable:hover{ box-shadow:0 16px 44px rgba(0,0,0,.14); transform:translateY(-2px); }
+  .herobar{ height:8px; }
+  .herotop{ display:flex; justify-content:space-between; align-items:center; padding:14px 18px 0; min-height:32px; }
+  .rpill{ font-size:10px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:#fff; background:#161616; padding:4px 12px; border-radius:20px; }
+  .hmatch{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center; padding:22px 24px 20px; gap:10px; }
   .hside{ text-align:center; padding:8px 4px; }
-  .hside .fl{ font-size:46px; line-height:1; filter:drop-shadow(0 3px 5px rgba(0,0,0,.18)); }
-  .hside .code{ font-size:24px; font-weight:900; margin-top:8px; letter-spacing:.5px; font-family:'Outfit',system-ui,sans-serif; color:#161616; }
-  .hside .nm{ font-size:12px; color:#8a8a8a; margin-top:1px; }
-  .hpick{ display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.3px; color:#1f8a4c; background:#e9f5ee; border-radius:9px; padding:2px 8px; margin-top:6px; }
-  .vschip{ justify-self:center; width:46px; height:46px; border-radius:50%; background:#fff; border:1px solid #ececec; box-shadow:0 3px 10px rgba(0,0,0,.1); display:flex; align-items:center; justify-content:center; font-family:'Outfit',system-ui,sans-serif; font-weight:800; font-size:13px; color:#c0c0c0; padding:0; }
-  .vschip.hassc{ font-size:15px; color:#161616; }
-  .hfoot{ padding:10px 14px; border-top:1px solid #f1f1f1; font-size:11.5px; color:#9a9a9a; text-align:center; }
+  .hside .fl{ font-size:58px; line-height:1; filter:drop-shadow(0 4px 7px rgba(0,0,0,.2)); }
+  .hside .code{ font-size:30px; font-weight:900; margin-top:10px; letter-spacing:.5px; font-family:'Outfit',system-ui,sans-serif; color:#161616; }
+  .hside .nm{ font-size:13px; color:#8a8a8a; margin-top:2px; }
+  .hpick{ display:inline-block; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.3px; color:#1f8a4c; background:#e9f5ee; border-radius:9px; padding:2px 9px; margin-top:8px; }
+  .vschip{ justify-self:center; width:54px; height:54px; border-radius:50%; background:#fff; border:1px solid #ececec; box-shadow:0 4px 12px rgba(0,0,0,.12); display:flex; align-items:center; justify-content:center; font-family:'Outfit',system-ui,sans-serif; font-weight:800; font-size:14px; color:#c0c0c0; padding:0; }
+  .vschip.hassc{ font-size:18px; color:#161616; }
+  .hfoot{ padding:12px 16px; border-top:1px solid #f1f1f1; font-size:12px; color:#9a9a9a; text-align:center; }
   .hfoot b{ color:#555; font-weight:600; }
   .upwait{ padding:16px; text-align:center; font-size:12px; color:#9a9a9a; }
-  .voteline{ display:flex; align-items:center; gap:8px; font-size:12.5px; color:#6e6e6e; font-weight:600; margin-bottom:8px; flex-wrap:wrap; }
+  .voteline{ display:flex; align-items:center; gap:8px; font-size:13px; color:#6e6e6e; font-weight:600; margin-bottom:9px; flex-wrap:wrap; }
   .voteline b{ color:#161616; }
-  .vbar{ display:flex; height:32px; border-radius:9px; overflow:hidden; box-shadow:inset 0 0 0 1px rgba(0,0,0,.05); }
-  .vbar .seg{ display:flex; align-items:center; font-size:11.5px; font-weight:800; color:#fff; white-space:nowrap; padding:0 9px; min-width:0; overflow:hidden; }
+  .vbar{ display:flex; height:36px; border-radius:10px; overflow:hidden; box-shadow:inset 0 0 0 1px rgba(0,0,0,.05); }
+  .vbar .seg{ display:flex; align-items:center; font-size:12px; font-weight:800; color:#fff; white-space:nowrap; padding:0 11px; min-width:0; overflow:hidden; }
   .vbar .seg.right{ justify-content:flex-end; }
   .vbar .seg.novote{ color:#bbb; background:#f3f3f3; width:100%; justify-content:center; }
+  .hero .kvote{ padding:14px 18px 8px; }
+  .hero .mcue{ padding:4px 16px 16px; font-size:12px; }
   .uppos{ font-size:12.5px; font-weight:700; color:#6e6e6e; min-width:96px; text-align:center; }
-  .dots{ display:flex; gap:6px; justify-content:center; margin-top:12px; }
+  .dots{ display:flex; gap:6px; justify-content:center; margin-top:12px; flex-wrap:wrap; }
   .dot{ width:7px; height:7px; border-radius:50%; background:#dcdcdc; transition:.15s; } .dot.on{ background:#161616; width:20px; border-radius:4px; }
   .mcard{ border:1px solid var(--border); border-radius:14px; overflow:hidden; background:#fff; display:flex; flex-direction:column; }
   .mcard.mclick{ cursor:pointer; transition:border-color .12s, box-shadow .12s, transform .12s; }
@@ -645,6 +647,9 @@
       if(rows.length===0){ body.innerHTML = '<tr><td colspan="12" class="empty">No entries yet — be the first to submit!</td></tr>'; return; }
       body.innerHTML = "";
       const showChamp = revealed();
+      // competition ranking: players tied on points AND teams left share a rank; the next distinct player jumps (1,1,1,…,7)
+      const dispRank=[]; let _cr=0;
+      rows.forEach((r,i)=>{ const p=rows[i-1]; const tied = p && (p.points||0)===(r.points||0) && (p.teamsLeft||0)===(r.teamsLeft||0); if(!tied) _cr=i+1; dispRank[i]=_cr; });
       const rc=(pts, mult)=>{ const p=pts||0; const c=p/mult; return `<td class="rc"><span class="p${p?'':' z'}">${p?('+'+p):'0'}</span><span class="c">${c}</span></td>`; };
       const bonus=(pts, val)=>{ const ok=(pts||0)>0; return `<td class="rc"><span class="p${ok?'':' z'}">${ok?('✓ +'+val):'—'}</span></td>`; };
       rows.forEach((r, i)=>{
@@ -664,12 +669,12 @@
         // rank cell: number + movement since last publish
         let mv = "";
         if(typeof r.prevRank==="number"){
-          const d = r.prevRank-(i+1);
+          const d = r.prevRank-dispRank[i];
           if(d>0) mv = `<span class="mv up">▲${d}</span>`;
           else if(d<0) mv = `<span class="mv dn">▼${-d}</span>`;
           else mv = `<span class="mv sm">–</span>`;
         }
-        const rankCell = `<td class="rank"><span class="rnum">${i+1}</span>${mv}</td>`;
+        const rankCell = `<td class="rank"><span class="rnum">${dispRank[i]}</span>${mv}</td>`;
         const totCell = canView
           ? `<td class="pts" style="text-align:right"><button class="totbtn" data-uid="${r.uid}" data-name="${name.replace(/"/g,'&quot;')}">${r.points||0}</button></td>`
           : `<td class="pts" style="text-align:right">${r.points||0}</td>`;
@@ -1101,7 +1106,7 @@
   function dayHeader(d){ const p=(d||"").split(" "); return (WD3[p[0]]||p[0])+' · '+(p[1]||'')+' '+(p[2]||''); }
   function matchKick(m){ return kickoffMs(m.date,m.time); }
   function isDone(m){ const k=matchKick(m); return (winnerOfMatch(m)!=null) || (k>0 && Date.now() > k + 3*3600*1000); }
-  function liveUpcoming(){ return officialMatches().filter(m=>matchKick(m)>0 && !isDone(m)).sort((x,y)=>matchKick(x)-matchKick(y)); }
+  function liveUpcoming(){ return officialMatches().filter(m=>matchKick(m)>0 && m.teams[0] && m.teams[1] && !isDone(m)).sort((x,y)=>matchKick(x)-matchKick(y)); }
   let upFocusNum=null;
   function renderUpcoming(){
     const host=$("schedList"), card=$("groupCard"); if(!host) return;
@@ -1320,8 +1325,12 @@
         || String(nameMap[a.uid]||"").localeCompare(String(nameMap[b.uid]||""))
       );
       const batch = writeBatch(db); let n=0;
+      let curRank=0;
       scored.forEach((s,i)=>{
-        const rank=i+1;
+        const prev=scored[i-1];
+        const tied = prev && (prev.b.total||0)===(s.b.total||0) && (prev.teamsLeft||0)===(s.teamsLeft||0);
+        if(!tied) curRank=i+1;
+        const rank=curRank;
         const prevRank = (priorRank[s.uid]!=null) ? priorRank[s.uid] : rank;  // first publish: no movement
         batch.set(doc(db,"players",s.uid), {points:s.b.total, breakdown:s.b, tbChamp:s.tbChamp, tbGoals:s.tbGoals, tbThird:s.tbThird, teamsLeft:s.teamsLeft, rank, prevRank, scoredAt:serverTimestamp()}, {merge:true}); n++;
       });
