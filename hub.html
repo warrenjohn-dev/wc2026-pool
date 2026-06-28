@@ -1335,6 +1335,12 @@
         batch.set(doc(db,"players",s.uid), {points:s.b.total, breakdown:s.b, tbChamp:s.tbChamp, tbGoals:s.tbGoals, tbThird:s.tbThird, teamsLeft:s.teamsLeft, rank, prevRank, scoredAt:serverTimestamp()}, {merge:true}); n++;
       });
       await batch.commit();
+      // refresh in-memory results + redraw everything so the bracket fills in without a reload
+      actualResults = { ...actual };
+      renderOfficialBracket();
+      renderUpcoming();
+      renderCheer();
+      renderPredBoard();
       st.textContent="Published ✓ scored "+n+" players"; st.style.color="#444444";
     }catch(err){ console.error(err); st.textContent="Error: "+(err.message||err); st.style.color="#b3402e"; }
   }
