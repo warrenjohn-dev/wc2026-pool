@@ -134,6 +134,12 @@
   .mstat{ font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; padding:1px 6px; border-radius:8px; vertical-align:middle; }
   .mstat.live{ color:#fff; background:#d10000; }
   .mstat.done{ color:#6e6e6e; background:#eeeeee; }
+  .rgt{ color:#1f8a4c; font-weight:800; } .wrng{ color:#c0392b; font-weight:800; }
+  table.predtbl{ width:100%; border-collapse:collapse; font-size:13px; margin-top:4px; }
+  table.predtbl th, table.predtbl td{ padding:9px 8px; border-bottom:1px solid #eee; text-align:left; }
+  table.predtbl th.ctr, table.predtbl td.ctr{ text-align:center; }
+  table.predtbl td{ color:#161616; }
+  table.predtbl tr.schead th{ background:#161616; color:#fff; border-bottom-color:#161616; font-size:11.5px; text-transform:uppercase; letter-spacing:.3px; }
   .mfoot{ margin-top:12px; padding:9px 14px; border-top:1px solid #f0f0f0; font-size:11.5px; color:#9a9a9a; text-align:center; }
   .mnote{ font-size:11px; color:#b3402e; padding:2px 0 4px; text-align:center; }
   .bkwrap{ padding:8px 14px 12px; }
@@ -306,8 +312,14 @@
 
       <div class="card" id="matchupsCard">
         <h2>Round of 32 Matchups</h2>
-        <div class="sub">Each Round-of-32 match — your own pick is highlighted; tap “Backers (N)” to see who else is on each team.</div>
+        <div class="sub">Vote who advances on each card — votes lock at kickoff. Your own bracket pick is highlighted; tap a card to see who's backing each team.</div>
         <div id="cheerList"><div class="empty">Loading…</div></div>
+      </div>
+
+      <div class="card" id="predCard">
+        <h2>Prediction Leaderboard</h2>
+        <div class="sub">Who calls the knockouts best. Each card's vote locks at kickoff and is graded once the result is in — ranked by accuracy.</div>
+        <div id="predBody"><div class="empty">Predictions appear once voting starts.</div></div>
       </div>
 
       <div class="card" style="grid-column:1 / -1">
@@ -847,6 +859,26 @@
     }
     return SCHED.map(s=>({ num:s.n, round:s.r, date:s.d, time:s.t, venue:s.v, teams:byNum[s.n]||["",""] }));
   }
+  const MON3={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+  function kickoffMs(dateStr,timeStr){
+    const dm=(dateStr||"").match(/([A-Z][a-z]{2})\s+(\d{1,2})/), tm=(timeStr||"").match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if(!dm||!tm) return 0;
+    let h=(+tm[1])%12; if(/pm/i.test(tm[3])) h+=12;
+    return Date.UTC(2026, MON3[dm[1]]||0, +dm[2], h+4, +tm[2]); // ET = EDT (UTC-4) through the tournament
+  }
+  function resultSet(k){ return new Set((actualResults&&actualResults[k])||[]); }
+  function nextResultSet(round){
+    return round==="Round of 32"?resultSet('r16') : round==="Round of 16"?resultSet('qf')
+         : round==="Quarter-final"?resultSet('sf') : round==="Semi-final"?resultSet('fin')
+         : round==="Final"?new Set(actualResults&&actualResults.champ?[actualResults.champ]:[])
+         : round==="3rd place"?new Set(actualResults&&actualResults.third?[actualResults.third]:[]) : null;
+  }
+  function winnerOfMatch(m){
+    if(!m||!m.teams[0]||!m.teams[1]) return null;
+    const set=nextResultSet(m.round); if(!set) return null;
+    if(set.has(m.teams[0])) return m.teams[0]; if(set.has(m.teams[1])) return m.teams[1]; return null;
+  }
+  function knockWinner(num){ return winnerOfMatch(officialMatches().find(m=>String(m.num)===String(num))); }
   function backerUidsOf(team, round){
     if(!team) return [];
     const out=[];
@@ -924,6 +956,8 @@
     onSnapshot(collection(db,"votes"), (snap)=>{
       voteData={}; snap.forEach(s=> voteData[s.id]=s.data()||{});
       document.querySelectorAll(".gvote[data-id]").forEach(c=> renderGroupVote(c.dataset.id));
+      document.querySelectorAll(".kvote[data-id]").forEach(c=> renderKnockVote(c.dataset.id));
+      renderPredBoard();
     }, e=>console.error(e));
   }
   async function castVote(id, choice){
@@ -974,7 +1008,7 @@
       }
     });
   }
-  function startScores(){ fetchScores(); if(scoreTimer) clearInterval(scoreTimer); scoreTimer=setInterval(fetchScores, 30000); }
+  function startScores(){ fetchScores(); if(scoreTimer) clearInterval(scoreTimer); scoreTimer=setInterval(()=>{ fetchScores(); document.querySelectorAll(".kvote[data-id]").forEach(c=> renderKnockVote(c.dataset.id)); }, 30000); }
   function renderCheer(){
     const host=$("cheerList"); if(!host) return;
     const card=$("matchupsCard");
@@ -989,13 +1023,67 @@
         +'<div class="mbar" style="'+teamBar(a,b)+'"></div>'
         +'<div class="mbody"><div class="mtime">'+m.date+' · '+m.time+' <span class="mstat"></span></div><div class="mteams">'+side(a,mineA)+'<div class="mvs">vs</div>'+side(b,mineB)+'</div></div>'
         +'<div class="mfoot">'+escapeHtml(m.venue)+' · '+escapeHtml(m.round)+'</div>'
+        +'<div class="kvote" data-id="'+m.num+'" data-a="'+escapeHtml(a)+'" data-b="'+escapeHtml(b)+'" data-kick="'+kickoffMs(m.date,m.time)+'"></div>'
         +'<div class="mcue">Tap to see backers ›</div></div>';
     }).join('') + '</div>';
+    matches.forEach(m=> renderKnockVote(m.num));
     applyScores();
+    renderPredBoard();
     if(!host._bkwired){ host._bkwired=true; host.addEventListener("click", e=>{
-      const c=e.target.closest(".mcard.mclick"); if(!c) return;
-      openMatchBackers(c.dataset.a, c.dataset.b, c.dataset.round, c.dataset.venue, c.dataset.date, c.dataset.time);
+      const vb=e.target.closest(".kvote .gvb"); if(vb){ castVote(vb.dataset.kid, vb.dataset.choice); return; }
+      const ch=e.target.closest(".kvote .gvchange"); if(ch){ voteExpand[ch.dataset.kid]=true; renderKnockVote(ch.dataset.kid); return; }
+      if(e.target.closest(".kvote")) return;
+      const c=e.target.closest(".mcard.mclick"); if(c) openMatchBackers(c.dataset.a, c.dataset.b, c.dataset.round, c.dataset.venue, c.dataset.date, c.dataset.time);
     }); }
+  }
+  function renderKnockVote(num){
+    const host=document.querySelector('.kvote[data-id="'+num+'"]'); if(!host) return;
+    const a=host.dataset.a, b=host.dataset.b, kick=+host.dataset.kick||0;
+    const locked = kick && Date.now()>=kick;
+    const picks=(voteData[num]&&voteData[num].picks)||{};
+    let va=0,vb=0; Object.values(picks).forEach(c=>{ if(c==="A")va++; else if(c==="B")vb++; });
+    const total=va+vb, pct=x=>total?Math.round(100*x/total):0;
+    const myPick=me?picks[me.uid]:null;
+    const La=flagOf(a)+escapeHtml(codeOf(a)), Lb=flagOf(b)+escapeHtml(codeOf(b));
+    const split=La+' '+pct(va)+'% · '+Lb+' '+pct(vb)+'%';
+    if(locked){
+      const win=knockWinner(num);
+      let res='';
+      if(myPick){ const myTeam=myPick==="A"?a:b;
+        res = win ? ' · your pick '+(myTeam===win?'<span class="rgt">✓</span>':'<span class="wrng">✗</span>')
+                  : ' · you picked '+(myPick==="A"?escapeHtml(codeOf(a)):escapeHtml(codeOf(b))); }
+      host.innerHTML='<div class="gvh">Voting closed'+(total?' · '+total+' vote'+(total>1?'s':''):'')+'</div><div class="gvbreak">'+split+res+'</div>';
+      return;
+    }
+    if(myPick && !voteExpand[num]){
+      const lbl=myPick==="A"?La:Lb;
+      host.innerHTML='<div class="gvoted">Your pick: <b>'+lbl+'</b>'+(total?' · '+total+' vote'+(total>1?'s':''):'')+'<button class="gvchange" type="button" data-kid="'+num+'">Change</button></div><div class="gvbreak">'+split+'</div>';
+      return;
+    }
+    const btn=(code,label,v)=>'<button class="gvb'+(myPick===code?' on':'')+'" data-kid="'+num+'" data-choice="'+code+'">'+label+' · '+pct(v)+'%</button>';
+    host.innerHTML='<div class="gvh">Who advances?'+(total?' · '+total+' vote'+(total>1?'s':''):'')+'</div><div class="gvbtns">'+btn("A",La,va)+btn("B",Lb,vb)+'</div>';
+  }
+  function renderPredBoard(){
+    const card=$("predCard"), host=$("predBody"); if(!host) return;
+    const oms=officialMatches(); const info={}, winners={};
+    oms.forEach(m=>{ info[m.num]={teams:m.teams}; const w=winnerOfMatch(m); if(w) winners[m.num]=w; });
+    const stat={};
+    Object.keys(voteData).forEach(id=>{
+      const mi=info[id]; if(!mi) return;            // only knockout matches
+      const picks=(voteData[id].picks)||{}, win=winners[id];
+      Object.keys(picks).forEach(uid=>{
+        const s=stat[uid]||(stat[uid]={picks:0,correct:0,decided:0}); s.picks++;
+        if(win){ s.decided++; const t=picks[uid]==="A"?mi.teams[0]:mi.teams[1]; if(t===win) s.correct++; }
+      });
+    });
+    const rows=Object.keys(stat).map(uid=>{ const s=stat[uid]; return {uid, name:rosterName(uid), picks:s.picks, correct:s.correct, decided:s.decided, acc:s.decided?s.correct/s.decided:-1}; });
+    if(!rows.length){ if(card) card.style.display="none"; host.innerHTML=""; return; }
+    if(card) card.style.display="";
+    rows.sort((a,b)=> (b.acc-a.acc) || (b.correct-a.correct) || a.name.localeCompare(b.name));
+    host.innerHTML='<table class="predtbl"><tr class="schead"><th>#</th><th>Player</th><th class="ctr">Picks</th><th class="ctr">Record</th><th class="ctr">Accuracy</th></tr>'
+      + rows.map((r,i)=>'<tr><td>'+(i+1)+'</td><td>'+(me&&r.uid===me.uid?'<b>'+escapeHtml(r.name)+'</b>':escapeHtml(r.name))+'</td>'
+        +'<td class="ctr">'+r.picks+'</td><td class="ctr">'+(r.decided?r.correct+'–'+(r.decided-r.correct):'—')+'</td>'
+        +'<td class="ctr">'+(r.decided?Math.round(r.acc*100)+'%':'—')+'</td></tr>').join('') + '</table>';
   }
   function openMatchBackers(a,b,round,venue,date,time){
     const ua=backerUidsOf(a,round), ub=backerUidsOf(b,round);
