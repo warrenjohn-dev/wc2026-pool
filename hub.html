@@ -1070,11 +1070,11 @@
       }
     });
   }
-  function startScores(){ fetchScores(); if(scoreTimer) clearInterval(scoreTimer); scoreTimer=setInterval(()=>{ fetchScores(); document.querySelectorAll(".kvote[data-id]").forEach(c=> renderKnockVote(c.dataset.id)); if($("schedList") && !liveUpcoming().some(m=>String(m.num)===String(upFocusNum))) renderUpcoming(); }, 30000); }
+  function startScores(){ fetchScores(); if(scoreTimer) clearInterval(scoreTimer); scoreTimer=setInterval(()=>{ fetchScores(); document.querySelectorAll(".kvote[data-id]").forEach(c=> renderKnockVote(c.dataset.id)); renderCheer(); if($("schedList") && !liveUpcoming().some(m=>String(m.num)===String(upFocusNum))) renderUpcoming(); }, 30000); }
   function renderCheer(){
     const host=$("cheerList"); if(!host) return;
     const card=$("matchupsCard");
-    const all=officialMatches().filter(m=> VISIBLE_ROUNDS.includes(m.round) && m.teams[0] && m.teams[1]);
+    const all=officialMatches().filter(m=> VISIBLE_ROUNDS.includes(m.round) && m.teams[0] && m.teams[1] && !isDone(m));
     if(!all.length){ if(card) card.style.display="none"; host.innerHTML=""; return; }
     if(card) card.style.display="";
     const cardFor=(m)=>{
