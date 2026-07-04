@@ -324,16 +324,16 @@
 
       <div class="card">
         <h2>Standings</h2>
-        <div class="empty" style="margin:-4px 0 6px">Tip: tap a player's <b style="color:#161616">name</b>, <b style="color:#161616">teams left</b>, or <b style="color:#161616">total</b> for a detailed breakdown.</div>
-        <div class="empty" style="margin:0 0 10px"><b style="color:#161616">Teams left</b> = your picked teams still alive in the tournament. <b style="color:#161616">In play</b> = the ones that can still earn you points (alive and picked to go further than they've reached) — a team that meets or outruns your pick stops counting.</div>
+        <div class="empty" style="margin:-4px 0 6px">Tip: tap a player's <b style="color:#161616">name</b>, <b style="color:#161616">in play</b>, or <b style="color:#161616">total</b> for a detailed breakdown.</div>
+        <div class="empty" style="margin:0 0 10px"><b style="color:#161616">In play</b> = your picked teams that can still earn you points — still alive and picked to go further than they've reached. A team that meets or outruns your pick stops counting.</div>
         <button id="h2hOpen" class="h2hbtn" type="button">&#9876;&#65039; Compare two brackets</button>
         <div class="scrollx">
         <table class="standings">
           <thead>
-            <tr><th colspan="5"></th><th colspan="8" class="grp">Points breakdown per round</th></tr>
-            <tr class="schead"><th>#</th><th>Player</th><th class="ctr">Teams left</th><th class="ctr" title="Teams that can still earn you points — still alive and picked to go further than they've reached">In play</th><th class="ctr">Champion</th><th class="ctr">R32</th><th class="ctr">R16</th><th class="ctr">QF</th><th class="ctr">SF</th><th class="ctr">Final</th><th class="ctr">Champ</th><th class="ctr">3rd</th><th style="text-align:right">Total</th></tr>
+            <tr><th colspan="4"></th><th colspan="8" class="grp">Points breakdown per round</th></tr>
+            <tr class="schead"><th>#</th><th>Player</th><th class="ctr" title="Teams that can still earn you points — still alive and picked to go further than they've reached">In play</th><th class="ctr">Champion</th><th class="ctr">R32</th><th class="ctr">R16</th><th class="ctr">QF</th><th class="ctr">SF</th><th class="ctr">Final</th><th class="ctr">Champ</th><th class="ctr">3rd</th><th style="text-align:right">Total</th></tr>
           </thead>
-          <tbody id="standingsBody"><tr><td colspan="13" class="empty">No entries yet.</td></tr></tbody>
+          <tbody id="standingsBody"><tr><td colspan="12" class="empty">No entries yet.</td></tr></tbody>
         </table>
         </div>
         <div class="empty" id="pickHint" style="margin-top:8px"></div>
@@ -407,7 +407,7 @@
       <div style="margin-top:20px; padding-top:16px; border-top:1px solid #e2e2e2;">
         <h3 style="margin:0 0 6px; font-family:'Outfit','Inter',sans-serif; font-size:18px; color:#161616;">Eliminated teams</h3>
         <p style="font-size:14px; color:#6e6e6e; margin:0 0 12px">
-          Tick a country when it's <b>knocked out</b> (group stage included). Combined with each player's picks and the round results, this drives their <b>Teams left</b> (teams still able to earn them points) and their still-in / eliminated list. Independent of scoring — save it whenever results change.
+          Tick a country when it's <b>knocked out</b> (group stage included). Combined with each player's picks and the round results, this drives their <b>In play</b> count (teams still able to earn them points) and their still-in / eliminated list. Independent of scoring — save it whenever results change.
         </p>
         <div id="elimGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:10px;"></div>
         <div style="margin-top:14px; display:flex; gap:12px; align-items:center; flex-wrap:wrap">
@@ -672,7 +672,7 @@
       renderCheer();
       renderUpcoming();
       renderPredBoard();
-      if(rows.length===0){ body.innerHTML = '<tr><td colspan="13" class="empty">No entries yet — be the first to submit!</td></tr>'; return; }
+      if(rows.length===0){ body.innerHTML = '<tr><td colspan="12" class="empty">No entries yet — be the first to submit!</td></tr>'; return; }
       body.innerHTML = "";
       const showChamp = revealed();
       // competition ranking: players tied on points AND teams left share a rank; the next distinct player jumps (1,1,1,…,7)
@@ -689,11 +689,7 @@
           ? `<button class="namebtn" data-uid="${r.uid}" data-name="${name.replace(/"/g,'&quot;')}">${escapeHtml(name)}</button>`
           : escapeHtml(name);
         const champ = showChamp ? (champMap[r.uid] || "—") : "🔒";
-        const alive = (typeof r.teamsAlive==="number") ? r.teamsAlive : ((typeof r.teamsLeft==="number") ? r.teamsLeft : 32);
         const inPlay = (typeof r.teamsLeft==="number") ? r.teamsLeft : 0;
-        const leftCell = canView
-          ? `<td class="alive"><button class="alivebtn" data-uid="${r.uid}" data-name="${name.replace(/"/g,'&quot;')}">${alive}</button></td>`
-          : `<td class="alive">${alive}</td>`;
         const inPlayCell = canView
           ? `<td class="alive"><button class="alivebtn" data-uid="${r.uid}" data-name="${name.replace(/"/g,'&quot;')}">${inPlay}</button></td>`
           : `<td class="alive">${inPlay}</td>`;
@@ -710,14 +706,14 @@
         const totCell = canView
           ? `<td class="pts" style="text-align:right"><button class="totbtn" data-uid="${r.uid}" data-name="${name.replace(/"/g,'&quot;')}">${r.points||0}</button></td>`
           : `<td class="pts" style="text-align:right">${r.points||0}</td>`;
-        tr.innerHTML = rankCell + `<td>${nameCell}</td>${leftCell}${inPlayCell}<td class="champ">${escapeHtml(champ)}</td>`
+        tr.innerHTML = rankCell + `<td>${nameCell}</td>${inPlayCell}<td class="champ">${escapeHtml(champ)}</td>`
           + rc(b.r32,1) + rc(b.r16,2) + rc(b.qf,4) + rc(b.sf,8) + rc(b.fin,16) + bonus(b.champ,50) + bonus(b.third,5) + totCell;
         body.appendChild(tr);
       });
       body.querySelectorAll(".namebtn").forEach(b=> b.addEventListener("click", ()=> openPicks(b.dataset.uid, b.dataset.name)) );
       body.querySelectorAll(".totbtn").forEach(b=> b.addEventListener("click", ()=> openPoints(b.dataset.uid, b.dataset.name)) );
       body.querySelectorAll(".alivebtn").forEach(b=> b.addEventListener("click", ()=> openTeamsLeft(b.dataset.uid, b.dataset.name)) );
-    }, (err)=>{ console.error(err); $("standingsBody").innerHTML = '<tr><td colspan="13" class="empty">Couldn\'t load standings.</td></tr>'; });
+    }, (err)=>{ console.error(err); $("standingsBody").innerHTML = '<tr><td colspan="12" class="empty">Couldn\'t load standings.</td></tr>'; });
   }
 
   async function openPicks(uid, name){
@@ -1347,8 +1343,6 @@
     s.r32.forEach(t=>{ if(elim.has(t)) return; const rr=realDepth(t,A); if(rr>=1 && pickDepth(t,s)>rr) n++; });
     return n;
   }
-  // "Teams left" (old, informational) = all of your picked teams still alive in the tournament.
-  function teamsAliveFor(picks, elim){ return [...deriveSets(picks).r32].filter(t=>!elim.has(t)).length; }
   async function publish(){
     const st=$("admStatus"); st.textContent="Publishing…"; st.style.color="#6e6e6e";
     const actual = { r32:[...sel.r32], r16:[...sel.r16], qf:[...sel.qf], sf:[...sel.sf], fin:[...sel.fin], champ:$("admChamp").value||"", third:$("admThird").value||"", finalGoals: $("admGoals").value!=="" ? Number($("admGoals").value) : null };
@@ -1374,8 +1368,7 @@
         const tbThird=(ds.third && actual.third && ds.third===actual.third)?1:0;
         // teams still able to score for this player (alive AND picked to go further than they've reached)
         const teamsLeft = teamsLeftFor(e.picks, actualSets, elim);
-        const teamsAlive = teamsAliveFor(e.picks, elim);
-        scored.push({ uid:snap.id, b, tbChamp, tbGoals, tbThird, teamsLeft, teamsAlive });
+        scored.push({ uid:snap.id, b, tbChamp, tbGoals, tbThird, teamsLeft });
       });
       // rank with the SAME comparator the standings uses, so positions match exactly
       scored.sort((a,b)=>
@@ -1394,7 +1387,7 @@
         if(!tied) curRank=i+1;
         const rank=curRank;
         const prevRank = (priorRank[s.uid]!=null) ? priorRank[s.uid] : rank;  // first publish: no movement
-        batch.set(doc(db,"players",s.uid), {points:s.b.total, breakdown:s.b, tbChamp:s.tbChamp, tbGoals:s.tbGoals, tbThird:s.tbThird, teamsLeft:s.teamsLeft, teamsAlive:s.teamsAlive, rank, prevRank, scoredAt:serverTimestamp()}, {merge:true}); n++;
+        batch.set(doc(db,"players",s.uid), {points:s.b.total, breakdown:s.b, tbChamp:s.tbChamp, tbGoals:s.tbGoals, tbThird:s.tbThird, teamsLeft:s.teamsLeft, rank, prevRank, scoredAt:serverTimestamp()}, {merge:true}); n++;
       });
       await batch.commit();
       // refresh in-memory results + redraw everything so the bracket fills in without a reload
@@ -1524,7 +1517,7 @@
       eliminatedSet=new Set(teams);
       const entries=await getDocs(collection(db,"entries"));
       const batch=writeBatch(db); let n=0;
-      entries.forEach(snap=>{ const e=snap.data(); if(!e||!e.picks) return; const left=teamsLeftFor(e.picks, actualSetsNow(), eliminatedSet); const alive=teamsAliveFor(e.picks, eliminatedSet); batch.set(doc(db,"players",snap.id), { teamsLeft:left, teamsAlive:alive }, { merge:true }); n++; });
+      entries.forEach(snap=>{ const e=snap.data(); if(!e||!e.picks) return; const left=teamsLeftFor(e.picks, actualSetsNow(), eliminatedSet); batch.set(doc(db,"players",snap.id), { teamsLeft:left }, { merge:true }); n++; });
       await batch.commit();
       st.textContent="Saved \u2713 "+teams.length+" eliminated \u00b7 updated "+n+" players"; st.style.color="#444444";
     }catch(err){ console.error(err); st.textContent="Error: "+(err.message||err); st.style.color="#b3402e"; }
