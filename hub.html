@@ -963,7 +963,7 @@
     // current user first, then alphabetical by name
     return out.sort((a,b)=> ((me&&a===me.uid)?0:1)-((me&&b===me.uid)?0:1) || rosterName(a).localeCompare(rosterName(b)));
   }
-  const VISIBLE_ROUNDS=["Round of 32","Round of 16"];   // rounds shown in the matchups grid (paired games only); add "Quarter-final" etc. to reveal more
+  const VISIBLE_ROUNDS=["Round of 32","Round of 16","Quarter-final"];   // rounds shown in the matchups grid (paired games only); add "Semi-final","Final" to reveal more
   // Remaining group-stage fixtures (Jun 26–27, 2026), ET
   const GROUP_FIXTURES=[
     {id:"g7",date:"Sat Jun 27",time:"5:00 PM ET",venue:"New York/NJ",tag:"Group L",teams:["Panama","England"]},
