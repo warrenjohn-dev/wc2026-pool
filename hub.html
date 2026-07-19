@@ -111,6 +111,36 @@
   .cardgrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:14px; }
   .cheerround{ font-family:'Outfit',system-ui,sans-serif; font-size:12px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:#9a9a9a; margin:20px 2px 10px; }
   .cheerround:first-child{ margin-top:2px; }
+  .champ-back{ display:none; position:fixed; inset:0; background:rgba(15,15,20,.62); align-items:center; justify-content:center; padding:20px; z-index:120; overflow:hidden; }
+  .champ-back.show{ display:flex; }
+  .champ-card{ position:relative; width:100%; max-width:400px; background:#fff; border-radius:22px; padding:34px 26px 24px; text-align:center; box-shadow:0 30px 80px rgba(0,0,0,.4); animation:champpop .5s cubic-bezier(.2,.9,.3,1.3); z-index:2; }
+  @keyframes champpop{ from{ transform:scale(.85) translateY(10px); opacity:0; } to{ transform:none; opacity:1; } }
+  .champ-x{ position:absolute; top:14px; right:16px; background:none; border:none; font-size:22px; color:#c4c4c4; cursor:pointer; line-height:1; }
+  .champ-x:hover{ color:#161616; }
+  .champ-trophy{ font-size:60px; line-height:1; filter:drop-shadow(0 6px 10px rgba(212,167,44,.4)); }
+  .champ-eyebrow{ margin-top:8px; font-size:12px; font-weight:800; letter-spacing:1.4px; text-transform:uppercase; color:#d4a72c; }
+  .champ-name{ font-family:'Outfit',system-ui,sans-serif; font-size:34px; font-weight:800; color:#161616; margin:2px 0 0; line-height:1.08; }
+  .champ-name.multi{ font-size:23px; }
+  .champ-pts{ font-size:15px; font-weight:700; color:#6e6e6e; margin-top:4px; }
+  .champ-chip{ display:inline-block; margin-top:12px; font-size:12.5px; font-weight:600; border-radius:20px; padding:5px 14px; }
+  .champ-chip.hit{ color:#1f8a4c; background:#e9f5ee; }
+  .champ-chip.miss{ color:#6e6e6e; background:#f1f1f1; }
+  .champ-div{ height:1px; background:#eee; margin:20px 0 4px; }
+  .champ-plabel{ font-size:11px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:#b3b3b3; margin-bottom:8px; }
+  .champ-row{ display:flex; align-items:center; gap:12px; padding:9px 12px; border-radius:12px; }
+  .champ-row.silver{ background:linear-gradient(90deg,#f6f7f8,#fff); }
+  .champ-row.bronze{ background:linear-gradient(90deg,#fbf6f0,#fff); }
+  .champ-row.tiepad{ padding-top:2px; }
+  .champ-medal{ font-size:22px; width:26px; text-align:center; }
+  .champ-pnm{ flex:1; text-align:left; font-weight:700; font-size:15px; color:#161616; }
+  .champ-ppts{ font-weight:700; font-size:14px; color:#6e6e6e; }
+  .champ-tietag{ font-size:10px; font-weight:800; text-transform:uppercase; color:#9a9a9a; background:#f0f0f0; border-radius:8px; padding:2px 7px; }
+  .champ-btn{ margin-top:18px; width:100%; padding:13px; border:none; border-radius:12px; background:#161616; color:#fff; font-weight:800; font-size:14px; cursor:pointer; }
+  .champ-btn:hover{ background:#000; }
+  .champ-note{ margin-top:12px; font-size:12px; color:#9a9a9a; }
+  .champ-confetti{ position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:1; }
+  .champ-cf{ position:absolute; top:-14px; width:9px; height:14px; opacity:.9; animation:champfall linear forwards; }
+  @keyframes champfall{ to{ transform:translateY(105vh) rotate(720deg); opacity:.85; } }
   .scroller{ display:flex; gap:14px; overflow-x:auto; padding:2px 2px 12px; max-width:100%; }
   .scroller .mcard{ flex:0 0 250px; }
   .upeyebrow{ text-align:center; font-size:11px; font-weight:800; letter-spacing:.8px; text-transform:uppercase; color:#b3b3b3; }
@@ -477,6 +507,22 @@
   </div>
 </div>
 
+<div class="champ-back" id="champModal">
+  <div class="champ-confetti" id="champConfetti"></div>
+  <div class="champ-card">
+    <button class="champ-x" id="champClose" type="button">&times;</button>
+    <div class="champ-trophy">&#127942;</div>
+    <div class="champ-eyebrow" id="champEyebrow">Pool Champion</div>
+    <div id="champWinner"></div>
+    <div id="champPickChip"></div>
+    <div class="champ-div"></div>
+    <div class="champ-plabel">The podium</div>
+    <div id="champPodium"></div>
+    <button class="champ-btn" id="champView" type="button">View full standings</button>
+    <div class="champ-note" id="champNote"></div>
+  </div>
+</div>
+
 <div class="paymodal-overlay" id="payModal">
   <div class="paymodal">
     <div class="paymoji">&#128181;</div>
@@ -511,6 +557,9 @@
   $("h2hModal").addEventListener("click", e=>{ if(e.target.id==="h2hModal") $("h2hModal").classList.remove("show"); });
   $("bkClose").addEventListener("click", ()=> $("bkModal").classList.remove("show"));
   $("bkModal").addEventListener("click", e=>{ if(e.target.id==="bkModal") $("bkModal").classList.remove("show"); });
+  $("champClose").addEventListener("click", ()=> $("champModal").classList.remove("show"));
+  $("champView").addEventListener("click", ()=> $("champModal").classList.remove("show"));
+  $("champModal").addEventListener("click", e=>{ if(e.target.id==="champModal") $("champModal").classList.remove("show"); });
   $("h2hA").addEventListener("change", renderH2H);
   $("h2hB").addEventListener("change", renderH2H);
 
@@ -635,6 +684,7 @@
     renderUpcoming();
     startVotes();
     startScores();
+    maybeCelebrate();
   }
   // New accounts (post-deadline) can't enter the bracket, but may join the predictions.
   // Give anyone without a profile a name-only record (predOnly) so their real name shows on the
@@ -650,6 +700,59 @@
         await setDoc(ref, { uid:user.uid, username, displayName, predOnly:true, updatedAt:serverTimestamp() }, { merge:true });
       }
     }catch(e){ console.error(e); }
+  }
+  let champShown=false, lastStandingRows=[];
+  function fireChampConfetti(){
+    const host=$("champConfetti"); if(!host) return; host.innerHTML="";
+    const cols=['#d4a72c','#1f8a4c','#3b6fb6','#d10000','#e8b923','#7b4fd0','#00a0a0'];
+    for(let i=0;i<70;i++){ const p=document.createElement('div'); p.className='champ-cf';
+      p.style.left=(Math.random()*100)+'%'; p.style.background=cols[i%cols.length];
+      p.style.animationDuration=(2.5+Math.random()*2.5)+'s'; p.style.animationDelay=(Math.random()*2.2)+'s';
+      p.style.width=(6+Math.random()*7)+'px'; p.style.height=(10+Math.random()*10)+'px';
+      p.style.borderRadius=(Math.random()<.4?'50%':'2px'); host.appendChild(p); }
+  }
+  // Places by the FULL tiebreaker chain — two players share a place only if identical on every key.
+  function champPlaces(rows){
+    const same=(a,b)=> (a.points||0)===(b.points||0) && (a.teamsLeft||0)===(b.teamsLeft||0) && (a.tbChamp||0)===(b.tbChamp||0) && ((a.tbGoals==null?999:a.tbGoals)===(b.tbGoals==null?999:b.tbGoals)) && (a.tbThird||0)===(b.tbThird||0);
+    const place=[]; let pr=0; rows.forEach((r,i)=>{ if(i===0||!same(r,rows[i-1])) pr=i+1; place[i]=pr; }); return place;
+  }
+  function maybeCelebrate(){
+    if(champShown) return;
+    if(!(actualResults && actualResults.champ)) return;           // final not decided yet
+    const rows=lastStandingRows;
+    if(!rows.length || typeof rows[0].points!=="number") return;  // standings not scored yet
+    champShown=true; showChampionCelebration(rows);
+  }
+  function showChampionCelebration(rows){
+    const place=champPlaces(rows);
+    const nm=r=> escapeHtml(r.displayName||r.username||"Player");
+    const grp=v=> rows.filter((r,i)=>place[i]===v);
+    const champs=grp(1), seconds=grp(2), thirds=grp(3);
+    if(champs.length<=1){
+      $("champEyebrow").textContent="Pool Champion";
+      const w=champs[0]; $("champWinner").innerHTML = w ? '<div class="champ-name">'+nm(w)+'</div><div class="champ-pts">'+(w.points||0)+' points</div>' : '';
+    } else {
+      $("champEyebrow").textContent="Pool Champions";
+      $("champWinner").innerHTML='<div class="champ-name multi">'+champs.map(nm).join(' &amp; ')+'</div><div class="champ-pts">'+(champs[0].points||0)+' points \u00b7 tied</div>';
+    }
+    const chip=$("champPickChip");
+    if(champs.length===1 && champMap[champs[0].uid]){
+      const pick=champMap[champs[0].uid], hit=actualResults.champ && pick===actualResults.champ;
+      chip.innerHTML='<span class="champ-chip '+(hit?'hit':'miss')+'">'+(hit?'Called the winner: ':'Champion pick: ')+flagOf(pick)+escapeHtml(pick)+'</span>';
+    } else chip.innerHTML='';
+    const rowHtml=(r,cls,medal,tie,first)=> '<div class="champ-row '+cls+(first?'':' tiepad')+'">'
+      +'<span class="champ-medal">'+(first?medal:'')+'</span>'
+      +'<span class="champ-pnm">'+nm(r)+'</span>'
+      +(first?'':'<span class="champ-tietag">'+tie+'</span>')
+      +'<span class="champ-ppts">'+(r.points||0)+' pts</span></div>';
+    let pod='';
+    seconds.forEach((r,i)=> pod+=rowHtml(r,'silver','\uD83E\uDD48','tied 2nd',i===0));
+    thirds.forEach((r,i)=> pod+=rowHtml(r,'bronze','\uD83E\uDD49','tied 3rd',i===0));
+    if(!pod) pod='<div class="ph" style="text-align:center">Just the champion this time.</div>';
+    $("champPodium").innerHTML=pod;
+    $("champNote").innerHTML = actualResults.champ ? (flagOf(actualResults.champ)+escapeHtml(actualResults.champ)+' are your 2026 World Cup champions') : '';
+    fireChampConfetti();
+    $("champModal").classList.add("show");
   }
   function startStandings(){
     onSnapshot(collection(db, "players"), (snap)=>{
@@ -668,10 +771,12 @@
         || String(a.displayName||a.username).localeCompare(String(b.displayName||b.username))
       );
       bracketList = rows.map(r=>({ uid:r.uid, name:r.displayName||r.username||"Player" }));
+      lastStandingRows = rows;              // cached for the champion celebration
       const body = $("standingsBody");
       renderCheer();
       renderUpcoming();
       renderPredBoard();
+      maybeCelebrate();                     // fire the finale popup once the final is scored
       if(rows.length===0){ body.innerHTML = '<tr><td colspan="12" class="empty">No entries yet — be the first to submit!</td></tr>'; return; }
       body.innerHTML = "";
       const showChamp = revealed();
